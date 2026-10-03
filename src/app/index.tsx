@@ -7,6 +7,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDoctrine } from '../state/doctrine.tsx';
 import { useStore } from '../state/store.tsx';
 import { nextPrompt } from '../triage/assess.ts';
+import { progress } from '../triage/progress.ts';
 import { planSeats, type Placement } from '../triage/seats.ts';
 import {
   BigButton,
@@ -100,6 +101,7 @@ function CasualtyCard({
   const doctrine = useDoctrine().doctrine!;
   const { casualty, assessment, seat } = placement;
   const next = nextPrompt(doctrine, casualty);
+  const { answered, total } = progress(doctrine, casualty, next);
   return (
     <Pressable
       accessibilityRole="button"
@@ -131,7 +133,7 @@ function CasualtyCard({
       )}
       <View style={styles.row}>
         <Label muted style={styles.next}>
-          {next ? `Next: ${next.question.label}` : 'All questions answered'}
+          {next ? `${answered} of ${total} · Next: ${next.question.label}` : 'All questions answered'}
         </Label>
         <Icon name="chevron" color={t.textMuted} />
       </View>

@@ -9,6 +9,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import { useDoctrine } from '../../state/doctrine.tsx';
 import { useCasualty, useStore } from '../../state/store.tsx';
 import { assess, nextPrompt, type StepView } from '../../triage/assess.ts';
+import { progress } from '../../triage/progress.ts';
 import {
   BigButton,
   CategoryBadge,
@@ -39,7 +40,9 @@ export default function Summary() {
   }
 
   const a = assess(doctrine, casualty);
-  const moreToAsk = nextPrompt(doctrine, casualty) !== null;
+  const next = nextPrompt(doctrine, casualty);
+  const moreToAsk = next !== null;
+  const { answered, total } = progress(doctrine, casualty, next);
   const questionLabel = (key: string) => doctrine.questions.find((q) => q.key === key)?.label ?? key;
 
   return (
@@ -107,7 +110,7 @@ export default function Summary() {
       <View style={[styles.footer, { paddingBottom: insets.bottom + 12, borderColor: t.border }]}>
         {moreToAsk && (
           <BigButton
-            label="Keep asking"
+            label={answered < total ? `Keep asking (${total - answered} left)` : 'Keep asking'}
             icon="chevron"
             onPress={() => router.replace(`/casualty/${casualty.id}`)}
           />
