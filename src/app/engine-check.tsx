@@ -1,8 +1,10 @@
+import { router } from 'expo-router';
 import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
 import { GRAPH, query } from '../graph/triageGraph.ts';
+import { ScreenHeader } from '../ui/components.tsx';
 
 // Engine check: the on-device TuringDB answers four spec queries from the
 // triage graph, with timings. Reached from the home screen's menu.
@@ -48,9 +50,9 @@ export default function EngineCheck() {
 
   return (
     <View style={styles.screen}>
+      <ScreenHeader title="Engine check" onBack={() => router.navigate('/')} />
       <ScrollView contentContainerStyle={styles.content}>
-        <Text style={styles.title}>TuringDB on this phone</Text>
-        <Text style={styles.subtitle}>graph {GRAPH}</Text>
+        <Text style={styles.subtitle}>TuringDB on this phone, graph {GRAPH}</Text>
         {checks.map((c) => (
           <View key={c.label} style={styles.card}>
             <Text style={styles.label}>{c.label}</Text>
@@ -70,8 +72,7 @@ export default function EngineCheck() {
 
 const styles = StyleSheet.create({
   screen: { flex: 1, backgroundColor: '#000' },
-  content: { padding: 20, paddingTop: 80, gap: 16 },
-  title: { color: '#fff', fontSize: 30, fontWeight: '700' },
+  content: { padding: 20, gap: 16 },
   subtitle: { color: '#8a8a8a', fontSize: 18, marginBottom: 8 },
   card: { backgroundColor: '#141414', borderRadius: 16, padding: 20, gap: 6 },
   label: { color: '#8a8a8a', fontSize: 18 },
