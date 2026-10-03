@@ -1,16 +1,21 @@
-// One casualty, one question at a time. YES and NO fill the bottom half of the
-// screen so they can be hit with a gloved thumb without looking twice.
+// One casualty, one question at a time. YES and NO fill the bottom of the
+// screen so they can be hit with a gloved thumb without looking twice. Above
+// them: how far through the questions this casualty is, and why this one.
 
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
-import { StyleSheet, Text, View } from 'react-native';
+import { useRef, useState } from 'react';
+import { Pressable, ScrollView, StyleSheet, Text, useWindowDimensions, View } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useDoctrine } from '../../state/doctrine.tsx';
 import { useCasualty, useStore } from '../../state/store.tsx';
 import { assess, nextPrompt } from '../../triage/assess.ts';
+import { formatDuration } from '../../triage/format.ts';
+import { progress, SECTION_NAMES, whyAsked, type Progress, type Why } from '../../triage/progress.ts';
 import {
   BigButton,
   CategoryBadge,
+  categoryWord,
   IconButton,
   Label,
   Screen,
@@ -18,21 +23,9 @@ import {
   sourceLine,
   useTheme,
 } from '../../ui/components.tsx';
-import { formatDuration } from '../../triage/format.ts';
+import { Icon } from '../../ui/Icon.tsx';
 import { size } from '../../ui/theme.ts';
 import { useNow } from '../../ui/useNow.ts';
-
-const SECTION_NAMES: Record<string, string> = {
-  m: 'Massive bleeding',
-  a: 'Airway',
-  r: 'Breathing',
-  c: 'Circulation',
-  h: 'Head and hypothermia',
-  paws_p: 'Pain',
-  paws_a: 'Antibiotics',
-  paws_w: 'Wounds',
-  paws_s: 'Splints and eyes',
-};
 
 export default function CasualtyQuestions() {
   const { id } = useLocalSearchParams<{ id: string }>();
@@ -40,8 +33,12 @@ export default function CasualtyQuestions() {
   const doctrine = useDoctrine().doctrine!;
   const { dispatch } = useStore();
   const insets = useSafeAreaInsets();
+  const { height } = useWindowDimensions();
   const now = useNow();
   const t = useTheme();
+  // which prompt the "why" panel is open for: a new question starts closed
+  const [whyFor, setWhyFor] = useState<string | null>(null);
+  const scroll = useRef<ScrollView>(null);
 
   if (!casualty) {
     return <Redirect href="/" />;
@@ -52,6 +49,7 @@ export default function CasualtyQuestions() {
     return <Redirect href={`/summary/${casualty.id}`} />;
   }
   const { category } = assess(doctrine, casualty);
+  const where = progress(doctrine, casualty, prompt);
 
   const reply = (value: 'yes' | 'no' | 'unsure') => {
     if (prompt.kind === 'kit') {
@@ -62,9 +60,12 @@ export default function CasualtyQuestions() {
   };
 
   const question = prompt.question;
+  const promptKey = `${prompt.kind}:${question.key}`;
+  const whyOpen = whyFor === promptKey;
   const context = prompt.kind === 'kit' ? 'Kit' : (SECTION_NAMES[prompt.question.section] ?? '');
   const cue = prompt.kind === 'question' ? prompt.question.cue : null;
-  const source = prompt.kind === 'question' ? sourceLine(prompt.question.sources) : null;
+  // big enough for a gloved thumb, small enough to leave the question room
+  const yesNoHeight = Math.max(140, Math.min(200, Math.round(height * 0.2)));
 
   return (
     <Screen>
@@ -81,7 +82,15 @@ export default function CasualtyQuestions() {
         }
       />
 
-      <View style={styles.question}>
+      <ProgressStrip progress={where} kit={prompt.kind === 'kit'} />
+
+      {/* Scrolls rather than clips when a long question, cue and the why
+          panel together outgrow the space above the answers */}
+      <ScrollView
+        ref={scroll}
+        style={styles.flex}
+        contentContainerStyle={styles.question}
+        onContentSizeChange={() => whyOpen && scroll.current?.scrollToEnd()}>
         <Label muted style={styles.context}>
           {context.toUpperCase()}
         </Label>
@@ -96,15 +105,30 @@ export default function CasualtyQuestions() {
             {cue}
           </Label>
         )}
-        {source && (
-          <Label muted style={styles.source}>
-            {source}
-          </Label>
-        )}
-      </View>
+        <Pressable
+          accessibilityRole="button"
+          accessibilityState={{ expanded: whyOpen }}
+          hitSlop={12}
+          onPress={() => setWhyFor(whyOpen ? null : promptKey)}
+          style={({ pressed }) => [
+            styles.whyButton,
+            { borderColor: t.border, backgroundColor: pressed ? t.surfacePressed : t.surface },
+          ]}>
+          <Icon name="info" color={t.text} size={22} />
+          <Text
+            numberOfLines={1}
+            adjustsFontSizeToFit
+            minimumFontScale={0.8}
+            maxFontSizeMultiplier={size.maxTextScale}
+            style={[styles.whyButtonText, { color: t.text }]}>
+            {whyOpen ? 'Hide why' : 'Why are we asking this?'}
+          </Text>
+        </Pressable>
+        {whyOpen && <WhyPanel why={whyAsked(doctrine, casualty, prompt)} />}
+      </ScrollView>
 
       <View style={[styles.answers, { paddingBottom: insets.bottom + 12 }]}>
-        <View style={styles.yesNo}>
+        <View style={[styles.yesNo, { height: yesNoHeight }]}>
           <BigButton
             big
             label="YES"
@@ -152,16 +176,156 @@ export default function CasualtyQuestions() {
   );
 }
 
+// M A R C H P, each a box with its letter (so it reads in red night mode
+// without colour): filled when done, outlined when current, dim to do
+function ProgressStrip({ progress: p, kit }: { progress: Progress; kit: boolean }) {
+  const t = useTheme();
+  const last = p.answered + 1 === p.total;
+  let line: string;
+  if (kit) {
+    line = `Kit check · ${p.answered} of ${p.total} questions answered`;
+  } else if (last) {
+    line = `Question ${p.total} of ${p.total} · the last one`;
+  } else {
+    const after = p.nextGroup ? `then ${p.nextGroup.name}` : '';
+    const more = p.leftInGroup > 0 ? `${p.leftInGroup} more here` : '';
+    line = [`Question ${p.answered + 1} of ${p.total}`, [more, after].filter(Boolean).join(', ')]
+      .filter(Boolean)
+      .join(' · ');
+  }
+  return (
+    <View style={styles.progress}>
+      <View
+        style={styles.strip}
+        accessible
+        accessibilityLabel={p.groups
+          .map((g) => `${g.name} ${g.state === 'todo' ? 'to do' : g.state}`)
+          .join(', ')}>
+        {p.groups.map((g) => (
+          <View
+            key={g.letter}
+            style={[
+              styles.segment,
+              g.state === 'done' && { backgroundColor: t.text, borderColor: t.text },
+              g.state === 'current' && { borderColor: t.accent, borderWidth: 2 },
+              g.state === 'todo' && { borderColor: t.border },
+            ]}>
+            <Text
+              maxFontSizeMultiplier={1}
+              style={[
+                styles.segmentText,
+                {
+                  color: g.state === 'done' ? t.background : g.state === 'current' ? t.accent : t.textMuted,
+                },
+              ]}>
+              {g.letter}
+            </Text>
+          </View>
+        ))}
+      </View>
+      {/* one line, so the question below never jumps as this changes */}
+      <Text
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.75}
+        maxFontSizeMultiplier={size.maxTextScale}
+        style={[styles.progressLine, { color: t.textMuted }]}>
+        {line}
+      </Text>
+    </View>
+  );
+}
+
+function WhyPanel({ why }: { why: Why }) {
+  const t = useTheme();
+  const source = why.sources.length > 0 ? sourceLine(why.sources) : null;
+  return (
+    <View style={[styles.why, { borderColor: t.border, backgroundColor: t.surface }]}>
+      {why.kind === 'kit' ? (
+        <>
+          <Label style={styles.whyLead}>With it, you can do this now instead of waiting for a medic:</Label>
+          {why.steps.map((s) => (
+            <Label key={s.label} style={styles.whyItem}>
+              {s.label} (for {s.injuries.join(', ')})
+            </Label>
+          ))}
+          <Label muted style={styles.whyItem}>
+            Without it, we ask about other kit that does the same job, or the step goes on the medic list.
+          </Label>
+        </>
+      ) : (
+        <>
+          <Label style={styles.whyLead}>
+            {why.early
+              ? `Asked early: a yes could make them ${categoryWord(why.early)}.`
+              : 'Next in the handbook order: MARCH, then PAWS.'}
+          </Label>
+          {why.points.length === 0 ? (
+            <Label style={styles.whyItem}>On its own, a yes here does not change their category.</Label>
+          ) : (
+            why.points.map((p) => (
+              <Label key={`${p.injury}:${p.with.join()}`} style={styles.whyItem}>
+                {p.with.length > 0 ? `With a yes to "${p.with.join('" and "')}", a yes` : 'A yes'} points to{' '}
+                {p.injury}:{' '}
+                {p.category ? categoryWord(p.category) : 'not ranked by triage doctrine, ask a medic'}.
+                {p.inferred ? ' (Our reading, for medic review.)' : ''}
+              </Label>
+            ))
+          )}
+          {why.quote && (
+            <Label muted style={styles.quote}>
+              {`"${why.quote}"`}
+            </Label>
+          )}
+          {source && (
+            <Label muted style={styles.whySource}>
+              {source}
+            </Label>
+          )}
+        </>
+      )}
+    </View>
+  );
+}
+
 const styles = StyleSheet.create({
-  question: { flex: 1, justifyContent: 'center', paddingHorizontal: size.gutter, gap: 12 },
+  flex: { flex: 1 },
+  progress: { paddingHorizontal: size.gutter, paddingTop: 4, gap: 6 },
+  strip: { flexDirection: 'row', gap: 6 },
+  segment: {
+    flex: 1,
+    height: 28,
+    borderRadius: 6,
+    borderWidth: 1,
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+  segmentText: { fontSize: 15, fontWeight: '800' },
+  progressLine: { fontSize: 17, fontWeight: '600' },
+  question: { flexGrow: 1, justifyContent: 'center', padding: size.gutter, gap: 12 },
   context: { fontSize: 16, fontWeight: '700', letterSpacing: 1.5 },
   questionText: { fontSize: size.question, fontWeight: '800', lineHeight: size.question * 1.2 },
   cue: { fontSize: 22, lineHeight: 30 },
-  source: { fontSize: 15 },
+  whyButton: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    alignSelf: 'flex-start',
+    maxWidth: '100%',
+    gap: 8,
+    minHeight: 48,
+    paddingHorizontal: 14,
+    borderRadius: 24,
+    borderWidth: 1,
+  },
+  whyButtonText: { fontSize: 18, fontWeight: '700', flexShrink: 1 },
+  why: { borderWidth: 1, borderRadius: 14, padding: 14, gap: 10 },
+  whyLead: { fontSize: 18, fontWeight: '700', lineHeight: 24 },
+  whyItem: { fontSize: 18, lineHeight: 24 },
+  quote: { fontSize: 16, lineHeight: 22, fontStyle: 'italic' },
+  whySource: { fontSize: 15 },
   answers: { paddingHorizontal: size.gutter, gap: 12 },
-  yesNo: { flexDirection: 'row', gap: 12, height: 200 },
+  yesNo: { flexDirection: 'row', gap: 12 },
   answer: { flex: 1, flexDirection: 'column' },
   secondary: { flexDirection: 'row', gap: 12 },
-  flex: { flex: 1 },
   tourniquet: { fontWeight: '700', textAlign: 'center', paddingVertical: 12 },
 });

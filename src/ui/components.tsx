@@ -156,6 +156,10 @@ const WORD: Record<CategoryKey, string> = {
   unranked: 'NOT RANKED',
 };
 
+export function categoryWord(key: string | null): string {
+  return WORD[(key ?? 'unranked') as CategoryKey] ?? WORD.unranked;
+}
+
 // Word plus shape, so it reads without colour (red night mode, colour blindness)
 function CategoryShape({ category, color, s }: { category: CategoryKey; color: string; s: number }) {
   return (

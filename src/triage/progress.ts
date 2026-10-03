@@ -17,14 +17,15 @@ export const SECTION_NAMES: Record<string, string> = {
   paws_s: 'Splints and eyes',
 };
 
-// MARCH, then the four PAWS sections as one (each holds a single question)
+// MARCH, then the four PAWS sections as one (each holds a single question).
+// Names are short: they finish the line "then <name>" on a phone width
 const GROUPS = [
   { letter: 'M', name: 'Massive bleeding', sections: ['m'] },
   { letter: 'A', name: 'Airway', sections: ['a'] },
   { letter: 'R', name: 'Breathing', sections: ['r'] },
   { letter: 'C', name: 'Circulation', sections: ['c'] },
-  { letter: 'H', name: 'Head and hypothermia', sections: ['h'] },
-  { letter: 'P', name: 'Pain, antibiotics, wounds', sections: ['paws_p', 'paws_a', 'paws_w', 'paws_s'] },
+  { letter: 'H', name: 'Head and cold', sections: ['h'] },
+  { letter: 'P', name: 'PAWS', sections: ['paws_p', 'paws_a', 'paws_w', 'paws_s'] },
 ];
 
 export type Group = { letter: string; name: string; state: 'done' | 'current' | 'todo' };
@@ -35,7 +36,8 @@ export type Progress = {
   groups: Group[];
   current: Group | null; // null on a kit prompt or when finished
   leftInGroup: number; // open questions in the current group after this one
-  nextGroup: Group | null; // the first later group with questions left
+  // the first later group with questions left, else one skipped over earlier
+  nextGroup: Group | null;
 };
 
 export function progress(d: Doctrine, c: Casualty, prompt: Prompt | null): Progress {
@@ -50,6 +52,7 @@ export function progress(d: Doctrine, c: Casualty, prompt: Prompt | null): Progr
   let current: Group | null = null;
   let leftInGroup = 0;
   let nextGroup: Group | null = null;
+  let skipped: Group | null = null;
   for (const qs of members) {
     const { letter, name } = GROUPS.find((g) => g.sections.includes(qs[0].section))!;
     const open = qs.filter((q) => isOpen(q.key));
@@ -58,8 +61,12 @@ export function progress(d: Doctrine, c: Casualty, prompt: Prompt | null): Progr
     if (here) {
       current = group;
       leftInGroup = open.length - 1;
-    } else if (current && !nextGroup && open.length > 0) {
-      nextGroup = group;
+    } else if (open.length > 0) {
+      if (current && !nextGroup) {
+        nextGroup = group;
+      } else if (!current && !skipped) {
+        skipped = group;
+      }
     }
     groups.push(group);
   }
@@ -70,7 +77,7 @@ export function progress(d: Doctrine, c: Casualty, prompt: Prompt | null): Progr
     groups,
     current,
     leftInGroup,
-    nextGroup,
+    nextGroup: nextGroup ?? (current ? skipped : null),
   };
 }
 

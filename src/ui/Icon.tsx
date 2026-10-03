@@ -11,6 +11,7 @@ export type IconName =
   | 'check'
   | 'cross'
   | 'help'
+  | 'info'
   | 'clock'
   | 'seat'
   | 'moon'
@@ -30,6 +31,12 @@ const PATHS: Record<IconName, (c: string) => React.ReactNode> = {
     <>
       <Circle cx={12} cy={12} r={9.5} />
       <Path d="M9.2 9.3a2.9 2.9 0 1 1 3.6 2.8c-.5.2-.8.6-.8 1.1V14M12 17.2v.1" />
+    </>
+  ),
+  info: () => (
+    <>
+      <Circle cx={12} cy={12} r={9.5} />
+      <Path d="M12 11v6M12 7.3v.1" />
     </>
   ),
   clock: () => (
