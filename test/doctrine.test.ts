@@ -18,14 +18,20 @@ after(() => engine.close());
 test('soldier questions come in MARCH then PAWS order', () => {
   const sections = doctrine.questions.map((q) => q.section);
   const order = ['m', 'a', 'r', 'c', 'h', 'paws_p', 'paws_a', 'paws_w', 'paws_s'];
-  assert.deepEqual(sections, [...sections].sort((x, y) => order.indexOf(x) - order.indexOf(y)));
+  assert.deepEqual(
+    sections,
+    [...sections].sort((x, y) => order.indexOf(x) - order.indexOf(y)),
+  );
   assert.equal(doctrine.questions[0].key, 'bleeding_severe');
   assert.equal(doctrine.questions.length, 27);
 });
 
 test('only TCCC-sourced questions reach the soldier', () => {
   for (const q of doctrine.questions) {
-    assert.ok(q.sources.some((s) => s.doc === 'tccc-handbook'), q.key);
+    assert.ok(
+      q.sources.some((s) => s.doc === 'tccc-handbook'),
+      q.key,
+    );
   }
 });
 

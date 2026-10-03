@@ -8,7 +8,10 @@ test('columns of every chunk become row objects keyed by column name', () => {
   const json = JSON.stringify({
     header: { column_names: ['t.key', 't.rank'], column_types: ['String', 'Int64'] },
     data: [
-      [['immediate', 'delayed'], [1, 2]],
+      [
+        ['immediate', 'delayed'],
+        [1, 2],
+      ],
       [['minimal'], [3]],
     ],
     time: 0.6,

@@ -31,11 +31,7 @@ const IFAK = {
   eye_shield: false,
 };
 
-function casualty(
-  n: number,
-  answers: Record<string, Answer>,
-  tourniquetAt: number | null = null,
-): Casualty {
+function casualty(n: number, answers: Record<string, Answer>, tourniquetAt: number | null = null): Casualty {
   return { ...newCasualty(`c${n}`, `C${n}`, n), answers, kit: IFAK, tourniquetAt };
 }
 
@@ -92,7 +88,10 @@ test('enough seats for everyone: everyone is seated, nothing contested', () => {
 test('a longer tourniquet goes first, all else equal (the user rule)', () => {
   const plan = planSeats(
     d,
-    [casualty(1, { bleeding_severe: 'yes' }, NOW - HOUR), casualty(2, { bleeding_severe: 'yes' }, NOW - 3 * HOUR)],
+    [
+      casualty(1, { bleeding_severe: 'yes' }, NOW - HOUR),
+      casualty(2, { bleeding_severe: 'yes' }, NOW - 3 * HOUR),
+    ],
     1,
     NOW,
   );
@@ -101,7 +100,12 @@ test('a longer tourniquet goes first, all else equal (the user rule)', () => {
 });
 
 test('two identical casualties for one seat are contested, never silently picked', () => {
-  const plan = planSeats(d, [casualty(1, { airway_obstruction: 'yes' }), casualty(2, { airway_obstruction: 'yes' })], 1, NOW);
+  const plan = planSeats(
+    d,
+    [casualty(1, { airway_obstruction: 'yes' }), casualty(2, { airway_obstruction: 'yes' })],
+    1,
+    NOW,
+  );
   assert.ok(plan.order.every((p) => p.seat === 'contested'));
   assert.equal(plan.contestedSeats, 1);
 });

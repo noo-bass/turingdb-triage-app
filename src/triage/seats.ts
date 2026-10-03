@@ -37,7 +37,8 @@ export function planSeats(d: Doctrine, casualties: Casualty[], seats: number, no
   type Person = (typeof people)[number];
 
   const level = (p: Person) => p.assessment.category?.rank ?? UNRANKED;
-  const tourniquetFor = (p: Person) => (p.casualty.tourniquetAt === null ? null : now - p.casualty.tourniquetAt);
+  const tourniquetFor = (p: Person) =>
+    p.casualty.tourniquetAt === null ? null : now - p.casualty.tourniquetAt;
 
   // x must go before y. The rules are lexicographic, so this is already transitive.
   const before = (x: Person, y: Person): boolean => {
