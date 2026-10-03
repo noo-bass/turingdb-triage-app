@@ -222,3 +222,9 @@ function kitStatus(c: Casualty, step: Step): 'have' | 'unknown' | 'none' {
   }
   return step.kit.every((k) => c.kit[k] === false) ? 'none' : 'unknown';
 }
+
+// The next casualty the sieve still has questions for, in the order they were
+// added, other than `except` (the one just finished). null: everyone is done
+export function nextToSieve(d: Doctrine, casualties: Casualty[], except?: string): Casualty | null {
+  return casualties.find((c) => c.id !== except && nextPrompt(d, c) !== null) ?? null;
+}

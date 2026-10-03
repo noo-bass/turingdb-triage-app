@@ -10,6 +10,7 @@ import {
   assess,
   newCasualty,
   nextPrompt,
+  nextToSieve,
   undo,
   type Answer,
   type Casualty,
@@ -178,4 +179,12 @@ test('tie-break answers are undone like any other answer', () => {
   c = undo(c);
   assert.equal(c.tourniquetWindow, null);
   assert.equal(c.answers.airway_obstruction, 'yes');
+});
+
+test('the next casualty to sieve is the first unfinished one, never the one just done', () => {
+  const done = sieve({ ...newCasualty('a', 'C1', 1), kit: {} }, () => 'no').c;
+  const fresh = newCasualty('b', 'C2', 2);
+  assert.equal(nextToSieve(d, [done, fresh])?.id, 'b');
+  assert.equal(nextToSieve(d, [fresh], 'b'), null);
+  assert.equal(nextToSieve(d, [done]), null);
 });
