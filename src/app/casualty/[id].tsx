@@ -31,7 +31,8 @@ export default function CasualtyQuestions() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const casualty = useCasualty(id);
   const doctrine = useDoctrine().doctrine!;
-  const { dispatch } = useStore();
+  const { state, dispatch } = useStore();
+  const { casualties } = state;
   const insets = useSafeAreaInsets();
   const { height } = useWindowDimensions();
   const now = useNow();
@@ -50,6 +51,7 @@ export default function CasualtyQuestions() {
   }
   const { category } = assess(doctrine, casualty);
   const where = progress(doctrine, casualty, prompt);
+  const who = `Casualty ${casualties.indexOf(casualty) + 1} of ${casualties.length}`;
 
   const reply = (value: 'yes' | 'no' | 'unsure') => {
     if (prompt.kind === 'kit') {
@@ -82,7 +84,7 @@ export default function CasualtyQuestions() {
         }
       />
 
-      <ProgressStrip progress={where} kit={prompt.kind === 'kit'} />
+      <ProgressStrip progress={where} kit={prompt.kind === 'kit'} who={who} />
 
       {/* Scrolls rather than clips when a long question, cue and the why
           panel together outgrow the space above the answers */}
@@ -177,29 +179,25 @@ export default function CasualtyQuestions() {
 }
 
 // M A R C H P, each a box with its letter (so it reads in red night mode
-// without colour): filled when done, outlined when current, dim to do
-function ProgressStrip({ progress: p, kit }: { progress: Progress; kit: boolean }) {
+// without colour): filled when done, outlined when current, dim to do,
+// dashed when the sieve will not go there
+function ProgressStrip({ progress: p, kit, who }: { progress: Progress; kit: boolean; who: string }) {
   const t = useTheme();
-  const last = p.answered + 1 === p.total;
-  let line: string;
-  if (kit) {
-    line = `Kit check · ${p.answered} of ${p.total} questions answered`;
-  } else if (last) {
-    line = `Question ${p.total} of ${p.total} · the last one`;
-  } else {
-    const after = p.nextGroup ? `then ${p.nextGroup.name}` : '';
-    const more = p.leftInGroup > 0 ? `${p.leftInGroup} more here` : '';
-    line = [`Question ${p.answered + 1} of ${p.total}`, [more, after].filter(Boolean).join(', ')]
-      .filter(Boolean)
-      .join(' · ');
-  }
+  // "up to": a yes ends the sieve early, so it is a ceiling, never a promise
+  const more = p.total - p.answered - 1;
+  const line = kit
+    ? `${who} · Kit check`
+    : `${who} · Question ${p.answered + 1} · ${more > 0 ? `up to ${more} more` : 'could be the last'}`;
   return (
     <View style={styles.progress}>
       <View
         style={styles.strip}
         accessible
         accessibilityLabel={p.groups
-          .map((g) => `${g.name} ${g.state === 'todo' ? 'to do' : g.state}`)
+          .map(
+            (g) =>
+              `${g.name} ${g.state === 'todo' ? 'to do' : g.state === 'skipped' ? 'not needed' : g.state}`,
+          )
           .join(', ')}>
         {p.groups.map((g) => (
           <View
@@ -209,6 +207,7 @@ function ProgressStrip({ progress: p, kit }: { progress: Progress; kit: boolean 
               g.state === 'done' && { backgroundColor: t.text, borderColor: t.text },
               g.state === 'current' && { borderColor: t.accent, borderWidth: 2 },
               g.state === 'todo' && { borderColor: t.border },
+              g.state === 'skipped' && { borderColor: t.border, borderStyle: 'dashed' },
             ]}>
             <Text
               maxFontSizeMultiplier={1}
@@ -256,8 +255,8 @@ function WhyPanel({ why }: { why: Why }) {
       ) : (
         <>
           <Label style={styles.whyLead}>
-            {why.early
-              ? `Asked early: a yes could make them ${categoryWord(why.early)}.`
+            {why.couldMake
+              ? `Asked because a yes could make them ${categoryWord(why.couldMake)}.`
               : 'Next in the handbook order: MARCH, then PAWS.'}
           </Label>
           {why.points.length === 0 ? (

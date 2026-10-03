@@ -2,7 +2,15 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 
-import { answer, newCasualty, nextPrompt, undo, type Answer, type Casualty } from '../src/triage/assess.ts';
+import {
+  answer,
+  newCasualty,
+  nextPrompt,
+  stillToAsk,
+  undo,
+  type Answer,
+  type Casualty,
+} from '../src/triage/assess.ts';
 import { loadDoctrine, type Doctrine } from '../src/triage/doctrine.ts';
 import { progress, whyAsked } from '../src/triage/progress.ts';
 import { startEngine, type Engine } from './support/engine.ts';
@@ -30,21 +38,21 @@ const NO_BLEEDING: Record<string, Answer> = {
   untreated_abdominal_or_pelvic_haemorrhage: 'no',
 };
 
-test('a new casualty: nothing answered out of every yes/no question, on Massive bleeding', () => {
+test('a new casualty: nothing answered, total is only the questions that could give a category', () => {
   const c = casualty();
   const p = progress(d, c, nextPrompt(d, c));
   assert.equal(p.answered, 0);
-  assert.equal(p.total, yesNo().length);
+  assert.equal(p.total, stillToAsk(d, c).length);
+  assert.ok(p.total < yesNo().length);
   assert.deepEqual(
     p.groups.map((g) => g.letter),
     ['M', 'A', 'R', 'C', 'H', 'P'],
   );
   assert.deepEqual(
     p.groups.map((g) => g.state),
-    ['current', 'todo', 'todo', 'todo', 'todo', 'todo'],
+    // nothing in C or H can change a category, so the sieve will not go there
+    ['current', 'todo', 'todo', 'skipped', 'skipped', 'todo'],
   );
-  assert.equal(p.leftInGroup, 3);
-  assert.equal(p.nextGroup?.name, 'Airway');
 });
 
 test('a finished section is done, and "not sure" counts as answered', () => {
@@ -79,21 +87,33 @@ test('everything answered: no prompt, every section done', () => {
   assert.ok(p.groups.every((g) => g.state === 'done'));
 });
 
-test('why: the first question is in MARCH order and a yes points to massive bleeding, Immediate', () => {
+test('once Immediate, the total shrinks to what was asked: nothing more can change it', () => {
+  const c = casualty(
+    { bleeding_severe: 'yes' },
+    { tourniquet: true, pressure_bandage: true, wound_dressing: true, haemostatic_dressing: true },
+  );
+  const p = progress(d, c, nextPrompt(d, c));
+  assert.equal(p.total, 1);
+  assert.deepEqual(
+    p.groups.map((g) => g.state),
+    ['done', 'skipped', 'skipped', 'skipped', 'skipped', 'skipped'],
+  );
+});
+
+test('why: the first question could make them Immediate, by pointing to massive bleeding', () => {
   const c = casualty();
   const why = whyAsked(d, c, nextPrompt(d, c)!);
   assert.equal(why.kind, 'question');
-  assert.equal(why.kind === 'question' && why.early, null);
+  assert.equal(why.kind === 'question' && why.couldMake, 'immediate');
   assert.ok(why.points.some((p) => p.injury === 'Massive bleeding' && p.category === 'immediate'));
   assert.ok(why.sources.some((s) => s.doc === 'tccc-handbook'));
 });
 
-test('why: a question jumped ahead of MARCH order says what it could reveal', () => {
-  const c = casualty({ ...NO_BLEEDING, airway_obstruction: 'no' });
+test('why: for a Delayed casualty, it names Immediate as what a yes could make them', () => {
+  const c = casualty({ ...NO_BLEEDING, airway_obstruction: 'no', torso_trauma: 'yes' });
   const prompt = nextPrompt(d, c)!;
-  assert.equal(prompt.kind === 'question' && prompt.question.key, 'torso_trauma');
   const why = whyAsked(d, c, prompt);
-  assert.equal(why.kind === 'question' && why.early, 'immediate');
+  assert.equal(why.kind === 'question' && why.couldMake, 'immediate');
 });
 
 test('why: a question that only counts with another names the other one', () => {

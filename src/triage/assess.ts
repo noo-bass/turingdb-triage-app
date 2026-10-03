@@ -117,19 +117,25 @@ export function assess(d: Doctrine, c: Casualty): Assessment {
   return { injuries, category, doNow, askKit: [...askKit.values()], needsMedic, stabilisable };
 }
 
-// Kit first (just in time: decision 8), then the question most likely to change
-// the outcome, else MARCH order. null when nothing is left to ask.
+// Kit first (just in time: decision 8), then, in MARCH order, the next question
+// that could still make them more urgent. null when none can: the sieve exits
+// early, so a second injury in the same or a lower category can go unasked
+// (chosen with the user: speed over completeness at the point of injury).
 export function nextPrompt(d: Doctrine, c: Casualty): Prompt | null {
   const kit = assess(d, c).askKit[0];
   if (kit) {
     return { kind: 'kit', question: kit };
   }
-
-  const current = assess(d, c).category?.rank ?? Infinity;
-  const open = d.questions.filter((q) => q.answerType === 'yes_no' && c.answers[q.key] === undefined);
-  const sharper = open.find((q) => revealRank(d, c, q.key) < current);
-  const question = sharper ?? open[0];
+  const question = stillToAsk(d, c)[0];
   return question ? { kind: 'question', question } : null;
+}
+
+// The open questions that could still change the category, in MARCH order
+export function stillToAsk(d: Doctrine, c: Casualty): Question[] {
+  const current = assess(d, c).category?.rank ?? Infinity;
+  return d.questions.filter(
+    (q) => q.answerType === 'yes_no' && c.answers[q.key] === undefined && revealRank(d, c, q.key) < current,
+  );
 }
 
 function findInjuries(d: Doctrine, c: Casualty): FoundInjury[] {

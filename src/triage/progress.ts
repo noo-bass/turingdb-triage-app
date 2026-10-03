@@ -2,7 +2,7 @@
 // one is being asked. Pure functions over the doctrine, like assess.ts; the
 // screens turn these into words.
 
-import { assess, type Casualty, type Prompt } from './assess.ts';
+import { assess, stillToAsk, type Casualty, type Prompt } from './assess.ts';
 import type { Category, Doctrine, Source } from './doctrine';
 
 export const SECTION_NAMES: Record<string, string> = {
@@ -28,57 +28,46 @@ const GROUPS = [
   { letter: 'P', name: 'PAWS', sections: ['paws_p', 'paws_a', 'paws_w', 'paws_s'] },
 ];
 
-export type Group = { letter: string; name: string; state: 'done' | 'current' | 'todo' };
+// skipped: nothing asked there and nothing there could change the category
+export type Group = { letter: string; name: string; state: 'done' | 'current' | 'todo' | 'skipped' };
 
 export type Progress = {
   answered: number; // yes/no questions answered ("not sure" counts)
-  total: number; // every yes/no question: the flow asks them all. Kit questions are extra, just in time
+  // answered plus those that could still change the category: the sieve exits
+  // early, so this shrinks as answers come in. Kit questions are extra
+  total: number;
   groups: Group[];
   current: Group | null; // null on a kit prompt or when finished
-  leftInGroup: number; // open questions in the current group after this one
-  // the first later group with questions left, else one skipped over earlier
-  nextGroup: Group | null;
 };
 
 export function progress(d: Doctrine, c: Casualty, prompt: Prompt | null): Progress {
   const questions = d.questions.filter((q) => q.answerType === 'yes_no');
-  const isOpen = (key: string) => c.answers[key] === undefined;
+  const toAsk = new Set(stillToAsk(d, c).map((q) => q.key));
+  const answered = questions.filter((q) => c.answers[q.key] !== undefined).length;
   const asking = prompt?.kind === 'question' ? prompt.question.key : null;
 
-  const members = GROUPS.map((g) => questions.filter((q) => g.sections.includes(q.section))).filter(
-    (qs) => qs.length > 0,
-  );
   const groups: Group[] = [];
   let current: Group | null = null;
-  let leftInGroup = 0;
-  let nextGroup: Group | null = null;
-  let skipped: Group | null = null;
-  for (const qs of members) {
-    const { letter, name } = GROUPS.find((g) => g.sections.includes(qs[0].section))!;
-    const open = qs.filter((q) => isOpen(q.key));
+  for (const { letter, name, sections } of GROUPS) {
+    const qs = questions.filter((q) => sections.includes(q.section));
+    if (qs.length === 0) {
+      continue;
+    }
     const here = asking !== null && qs.some((q) => q.key === asking);
-    const group: Group = { letter, name, state: here ? 'current' : open.length === 0 ? 'done' : 'todo' };
+    const open = qs.some((q) => toAsk.has(q.key));
+    const asked = qs.some((q) => c.answers[q.key] !== undefined);
+    const group: Group = {
+      letter,
+      name,
+      state: here ? 'current' : open ? 'todo' : asked ? 'done' : 'skipped',
+    };
     if (here) {
       current = group;
-      leftInGroup = open.length - 1;
-    } else if (open.length > 0) {
-      if (current && !nextGroup) {
-        nextGroup = group;
-      } else if (!current && !skipped) {
-        skipped = group;
-      }
     }
     groups.push(group);
   }
 
-  return {
-    answered: questions.filter((q) => !isOpen(q.key)).length,
-    total: questions.length,
-    groups,
-    current,
-    leftInGroup,
-    nextGroup: nextGroup ?? (current ? skipped : null),
-  };
+  return { answered, total: answered + toAsk.size, groups, current };
 }
 
 // A yes to the question points to `injury`; `with` lists the other questions
@@ -88,9 +77,8 @@ export type Pointer = { injury: string; category: string | null; with: string[];
 export type Why =
   | {
       kind: 'question';
-      // set when the question was asked ahead of MARCH order because a yes
-      // could make them this category; null when it is simply next in order
-      early: string | null;
+      // the most urgent category a yes could make them, above where they are now
+      couldMake: string | null;
       points: Pointer[]; // empty: a yes does not change the category on its own
       sources: Source[];
       quote: string | null;
@@ -160,14 +148,14 @@ export function whyAsked(d: Doctrine, c: Casualty, prompt: Prompt): Why {
     }
   }
 
-  // nextPrompt asks MARCH order unless a question can reveal something more
-  // urgent; a question that is not the first open one was picked for that
-  const first = d.questions.find((x) => x.answerType === 'yes_no' && c.answers[x.key] === undefined);
-  const early = first && first.key !== q.key ? ((mostUrgent as Category | null)?.key ?? null) : null;
+  // the sieve only asks a question that could make them more urgent than now
+  const top = mostUrgent as Category | null;
+  const current = assess(d, c).category?.rank ?? Infinity;
+  const couldMake = top && top.rank < current ? top.key : null;
 
   const quoted =
     q.sources.find((s) => s.doc === 'tccc-handbook' && s.quote) ?? q.sources.find((s) => s.quote);
-  return { kind: 'question', early, points, sources: q.sources, quote: sentence(quoted?.quote ?? null) };
+  return { kind: 'question', couldMake, points, sources: q.sources, quote: sentence(quoted?.quote ?? null) };
 }
 
 // Handbook flowchart boxes ("Tourniquet?") are titles, not explanations:

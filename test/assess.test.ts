@@ -123,3 +123,43 @@ test('undo takes back answers and kit in reverse order', () => {
   assert.deepEqual(c.answers, {});
   assert.deepEqual(undo(c), c);
 });
+
+// Answers every prompt the flow offers (questions with `value`, kit with yes)
+// until it stops; returns the casualty and the question keys asked, in order
+function sieve(c: Casualty, value: (key: string) => Answer = () => 'no') {
+  const asked: string[] = [];
+  for (let prompt = nextPrompt(d, c); prompt; prompt = nextPrompt(d, c)) {
+    if (prompt.kind === 'kit') {
+      c = answerKit(c, prompt.question.kit, true);
+    } else {
+      asked.push(prompt.question.key);
+      c = answer(c, prompt.question.key, value(prompt.question.key));
+    }
+  }
+  return { c, asked };
+}
+
+test('early exit: Immediate cannot get more urgent, so the sieve stops once its kit is known', () => {
+  const { c, asked } = sieve(casualty({ bleeding_severe: 'yes' }));
+  assert.deepEqual(asked, []);
+  assert.equal(assess(d, c).category?.key, 'immediate');
+  assert.ok(assess(d, c).doNow.length > 0);
+  assert.equal(nextPrompt(d, c), null);
+});
+
+test('early exit: with nothing found it asks only questions that could give a category', () => {
+  const { asked } = sieve(casualty());
+  const canRank = (key: string) =>
+    d.links.some((l) => l.finding === key && d.injuries.get(l.injury)?.category) ||
+    d.conjunctions.some((r) => r.findings.includes(key) && d.injuries.get(r.injury)?.category);
+  assert.ok(asked.length > 0);
+  assert.ok(asked.every(canRank), `asked a question that cannot rank: ${asked.filter((k) => !canRank(k))}`);
+  assert.ok(!asked.includes('conscious'));
+  assert.ok(asked.length < d.questions.filter((q) => q.answerType === 'yes_no').length);
+});
+
+test('early exit: Delayed keeps asking only what could make them Immediate', () => {
+  const { asked } = sieve(casualty({ torso_trauma: 'yes' }));
+  assert.ok(asked.includes('breathing_distress'));
+  assert.ok(!asked.includes('eye_injury')); // can only give Delayed, which they already are
+});
