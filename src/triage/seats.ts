@@ -9,6 +9,7 @@
 
 import { assess, type Assessment, type Casualty } from './assess.ts';
 import type { Doctrine, Source } from './doctrine';
+import { formatDuration } from './format.ts';
 
 export type Reason = {
   text: string;
@@ -101,7 +102,7 @@ function reasonsFor(a: Assessment, tourniquetMs: number | null): Reason[] {
   }
 
   if (tourniquetMs !== null) {
-    reasons.push({ text: `Tourniquet on for ${duration(tourniquetMs)}`, basis: 'product_rule' });
+    reasons.push({ text: `Tourniquet on for ${formatDuration(tourniquetMs)}`, basis: 'product_rule' });
   }
 
   return reasons;
@@ -109,9 +110,4 @@ function reasonsFor(a: Assessment, tourniquetMs: number | null): Reason[] {
 
 function title(key: string): string {
   return key.charAt(0).toUpperCase() + key.slice(1);
-}
-
-function duration(ms: number): string {
-  const minutes = Math.round(ms / 60_000);
-  return minutes < 60 ? `${minutes} min` : `${Math.floor(minutes / 60)} h ${minutes % 60} min`;
 }

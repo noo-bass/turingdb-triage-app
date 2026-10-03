@@ -143,11 +143,6 @@ export function CategoryBadge({ category }: { category: Category | null }) {
   );
 }
 
-export function formatDuration(ms: number): string {
-  const minutes = Math.max(0, Math.floor(ms / 60_000));
-  return minutes < 60 ? `${minutes} min` : `${Math.floor(minutes / 60)} h ${minutes % 60} min`;
-}
-
 export function sourceLine(sources: { doc: string; page: number | null }[]): string | null {
   const s = sources.find((x) => x.doc === 'tccc-handbook') ?? sources[0];
   if (!s) {

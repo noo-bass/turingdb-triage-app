@@ -11,13 +11,13 @@ import { assess, nextPrompt } from '../../triage/assess.ts';
 import {
   BigButton,
   CategoryBadge,
-  formatDuration,
   IconButton,
   Label,
   Screen,
   sourceLine,
   useTheme,
 } from '../../ui/components.tsx';
+import { formatDuration } from '../../triage/format.ts';
 import { size } from '../../ui/theme.ts';
 import { useNow } from '../../ui/useNow.ts';
 

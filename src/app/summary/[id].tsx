@@ -13,7 +13,6 @@ import {
   BigButton,
   CategoryBadge,
   DraftBanner,
-  formatDuration,
   IconButton,
   Label,
   Screen,
@@ -21,6 +20,7 @@ import {
   useTheme,
 } from '../../ui/components.tsx';
 import { Icon } from '../../ui/Icon.tsx';
+import { formatDuration } from '../../triage/format.ts';
 import { size } from '../../ui/theme.ts';
 import { useNow } from '../../ui/useNow.ts';
 
