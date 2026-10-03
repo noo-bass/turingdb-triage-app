@@ -13,7 +13,6 @@ export type IconName =
   | 'help'
   | 'info'
   | 'clock'
-  | 'seat'
   | 'moon'
   | 'sun'
   | 'alert'
@@ -45,7 +44,6 @@ const PATHS: Record<IconName, (c: string) => React.ReactNode> = {
       <Path d="M12 6.5V12l3.5 2.5" />
     </>
   ),
-  seat: () => <Path d="M7 3v10h10M7 13l-1 8M17 13l1 8M7 8h7" />,
   moon: () => <Path d="M20 14.5A8.5 8.5 0 0 1 9.5 4 8.5 8.5 0 1 0 20 14.5z" />,
   sun: () => (
     <>

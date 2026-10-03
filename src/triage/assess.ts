@@ -13,8 +13,15 @@ export type Casualty = {
   answers: Record<string, Answer>; // by question key
   kit: Record<string, boolean>; // by kit key: does the soldier have it
   tourniquetAt: number | null; // when a tourniquet went on (never removed: decision 7)
+  // From the tie-break question when there is no timer: 'none', or when it went
+  // on as a window (a bucket, never a made-up exact time). null: not asked
+  tourniquetWindow: TourniquetWindow | 'none' | null;
+  recheck: Answer | null; // the shock question asked again at tie-break time
   history: string[]; // answered keys in order ('kit:<key>' for kit), for undo
 };
+
+// It went on between `from` (null: longer ago than any bucket) and `to`
+export type TourniquetWindow = { from: number | null; to: number };
 
 export type FoundInjury = {
   injury: Injury;
@@ -32,14 +39,24 @@ export type Assessment = {
   doNow: StepView[]; // all-combatant steps with the kit confirmed
   askKit: KitQuestion[]; // kit to ask about before more steps can be shown
   needsMedic: StepView[]; // medic-only steps, and soldier steps without the kit
-  // every injury has a step the soldier can do now (a seat-ranking factor)
+  // every injury has a step the soldier can do now (a tie-break factor)
   stabilisable: boolean;
 };
 
 export type Prompt = { kind: 'kit'; question: KitQuestion } | { kind: 'question'; question: Question };
 
 export function newCasualty(id: string, name: string, now: number): Casualty {
-  return { id, name, createdAt: now, answers: {}, kit: {}, tourniquetAt: null, history: [] };
+  return {
+    id,
+    name,
+    createdAt: now,
+    answers: {},
+    kit: {},
+    tourniquetAt: null,
+    tourniquetWindow: null,
+    recheck: null,
+    history: [],
+  };
 }
 
 export function answer(c: Casualty, questionKey: string, value: Answer): Casualty {

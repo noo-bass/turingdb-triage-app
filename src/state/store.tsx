@@ -1,4 +1,4 @@
-// App state: the casualties, the seat count and the display mode. Saved to a
+// App state: the casualties and the display mode. Saved to a
 // file after every change, so a killed app or a dead phone loses nothing.
 // Casualties live only here, never in the graph (decision 2).
 
@@ -10,7 +10,6 @@ import type { Mode } from '../ui/theme.ts';
 
 export type State = {
   casualties: Casualty[];
-  seats: number;
   mode: Mode;
   nextNumber: number; // C1, C2, ... never reused, so names stay unambiguous
 };
@@ -22,10 +21,9 @@ type Action =
   | { type: 'undo'; id: string }
   | { type: 'tourniquet'; id: string; now: number }
   | { type: 'evacuated'; id: string }
-  | { type: 'seats'; seats: number }
   | { type: 'mode'; mode: Mode };
 
-const INITIAL: State = { casualties: [], seats: 3, mode: 'dark', nextNumber: 1 };
+const INITIAL: State = { casualties: [], mode: 'dark', nextNumber: 1 };
 
 function reduce(state: State, action: Action): State {
   const update = (id: string, f: (c: Casualty) => Casualty) => ({
@@ -53,8 +51,6 @@ function reduce(state: State, action: Action): State {
       return update(action.id, (c) => (c.tourniquetAt === null ? { ...c, tourniquetAt: action.now } : c));
     case 'evacuated':
       return { ...state, casualties: state.casualties.filter((c) => c.id !== action.id) };
-    case 'seats':
-      return { ...state, seats: Math.max(0, Math.min(20, action.seats)) };
     case 'mode':
       return { ...state, mode: action.mode };
   }

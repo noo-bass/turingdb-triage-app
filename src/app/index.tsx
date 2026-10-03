@@ -1,4 +1,4 @@
-// Home: every casualty, in seat order, with what matters at a glance.
+// Home: every casualty, in priority order, with what matters at a glance.
 
 import { router } from 'expo-router';
 import { Pressable, ScrollView, StyleSheet, Text, View } from 'react-native';
@@ -8,7 +8,7 @@ import { useDoctrine } from '../state/doctrine.tsx';
 import { useStore } from '../state/store.tsx';
 import { nextPrompt } from '../triage/assess.ts';
 import { progress } from '../triage/progress.ts';
-import { planSeats, type Placement } from '../triage/seats.ts';
+import { planOrder, type Placement } from '../triage/order.ts';
 import {
   BigButton,
   CategoryBadge,
@@ -31,8 +31,7 @@ export default function Home() {
   const now = useNow();
   const t = useTheme();
 
-  const plan = planSeats(doctrine!, state.casualties, state.seats, now);
-  const tooFewSeats = state.casualties.length > state.seats;
+  const order = planOrder(doctrine!, state.casualties, now);
 
   const add = () => {
     const created = Date.now();
@@ -60,27 +59,18 @@ export default function Home() {
 
       <ScrollView contentContainerStyle={styles.list}>
         <DraftBanner />
-        {plan.order.length === 0 && (
+        {order.length === 0 && (
           <Label muted style={styles.empty}>
             No casualties yet. Add each one, then answer the questions for them. You can switch between them
             at any time.
           </Label>
         )}
-        {plan.order.map((p) => (
-          <CasualtyCard key={p.casualty.id} placement={p} now={now} showSeat={tooFewSeats} />
+        {order.map((p) => (
+          <CasualtyCard key={p.casualty.id} placement={p} now={now} />
         ))}
-        {plan.contestedSeats > 0 && (
-          <Label style={{ color: t.warning }}>
-            {plan.contestedSeats === 1 ? 'The last seat is' : `${plan.contestedSeats} seats are`} a medic or
-            commander call. Open Seats to compare.
-          </Label>
-        )}
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + 12, borderColor: t.border }]}>
-        {state.casualties.length > 0 && (
-          <BigButton label={`Seats: ${state.seats}`} icon="seat" onPress={() => router.push('/seats')} />
-        )}
         {/* Add sits lowest, under the thumb: it is the first thing done here */}
         <BigButton label="Add casualty" icon="plus" onPress={add} />
       </View>
@@ -88,18 +78,10 @@ export default function Home() {
   );
 }
 
-function CasualtyCard({
-  placement,
-  now,
-  showSeat,
-}: {
-  placement: Placement;
-  now: number;
-  showSeat: boolean;
-}) {
+function CasualtyCard({ placement, now }: { placement: Placement; now: number }) {
   const t = useTheme();
   const doctrine = useDoctrine().doctrine!;
-  const { casualty, assessment, seat } = placement;
+  const { casualty, assessment } = placement;
   const next = nextPrompt(doctrine, casualty);
   const { answered, total } = progress(doctrine, casualty, next);
   return (
@@ -120,11 +102,6 @@ function CasualtyCard({
         </Text>
         <CategoryBadge category={assessment.category} />
       </View>
-      {showSeat && (
-        <Label style={[styles.seat, { color: seat === 'contested' ? t.warning : t.text }]}>
-          {seat === 'yes' ? 'Seat' : seat === 'no' ? 'Waits' : 'Contested seat'}
-        </Label>
-      )}
       {casualty.tourniquetAt !== null && (
         <View style={styles.row}>
           <Icon name="clock" color={t.warning} size={22} />
@@ -147,7 +124,6 @@ const styles = StyleSheet.create({
   card: { borderRadius: size.radius, borderWidth: 1, padding: 18, gap: 10 },
   cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
   name: { fontSize: 40, fontWeight: '800', flexShrink: 1 },
-  seat: { fontWeight: '700' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   next: { flex: 1 },
   footer: {
