@@ -2,8 +2,10 @@
 
 Research prototype. Not a medical device. Draft doctrine, awaiting medic review.
 
-An iPhone and Android app that walks a tired soldier through casualties one big question at a time,
-tracks several casualties at once, and says who gets the seats and why. The questions, injuries,
+An iPhone and Android app that walks a tired soldier through casualties one big question at a time:
+say how many, sieve each one (stopping as soon as nothing could change their category), see everyone
+by category, answer a few tie-break questions only where categories overlap, and get a final order
+with the reason for each place. A photo of each casualty, kept only on the phone, tells them apart. The questions, injuries,
 categories and steps come from the TCCC/MOD doctrine graph, queried with Cypher from a TuringDB
 engine running inside the app: no network.
 
@@ -17,7 +19,10 @@ modules/turing-db                Expo native module: TuringDB in-process (iOS: O
 src/graph                        open the engine and graph; parse its JSON answers into rows
 src/triage/doctrine.ts           Cypher (DECISION-SPEC.md Q1-Q11) -> what the soldier flow needs
 src/triage/assess.ts             one casualty: injuries, category, do now / needs a medic, next question
-src/triage/seats.ts              who gets the seats: seated, contested (never silently picked), waits
+src/triage/order.ts              who goes first: category, then our tie-break rules; ties are named, never picked
+src/triage/ties.ts               the tie-break questions worth asking (only those that could change the order)
+src/triage/progress.ts           where a casualty is in the sieve, and why each question is asked
+src/state/photos.ts              casualty photos under Documents, pruned when no casualty uses them
 src/app                          screens (Expo Router)
 ```
 
@@ -44,7 +49,7 @@ iOS signing: pick your team in Xcode, or add `ios.appleTeamId` to app.json. Andr
 ## Checks
 
 ```bash
-npm test             # decision engine against the phone's engine built for macOS (27 tests)
+npm test             # decision engine against the phone's engine built for macOS (53 tests)
 npx tsc --noEmit
 npx expo lint
 ```
@@ -54,7 +59,11 @@ Tests drive `turing_mobile_smoke` from the macOS build of the engine
 
 ## Rules that are ours, not doctrine (for medic review)
 
-- Seat order within a category: cannot be stabilised here first, then the longer tourniquet first.
+- The sieve stops once no remaining question could make the casualty more urgent. A second injury in
+  the same or a lower category can go unasked, and questions that lead only to injuries doctrine
+  does not rank (bleeding at groin or armpit, shock, hypothermia) are never asked.
+- Order within a category: cannot be stabilised here first, then the longer tourniquet (an estimate is
+  a bucket, so two in the same bucket stay tied), then signs of shock when checked again.
 - Unranked casualties go after Minimal and before Expectant, and always read
   "Not ranked by triage doctrine: ask a medic", never "can wait".
 - A step listing several kit items can be done with any one of them.
