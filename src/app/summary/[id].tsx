@@ -1,5 +1,5 @@
-// What this casualty needs: do-now steps, the medic stop, and why, with the
-// doctrine source on every line.
+// Where the sieve exits: their category, the do-now steps, the medic stop,
+// and why, with the doctrine source on every line. Then on to the next casualty.
 
 import { Redirect, router, useLocalSearchParams } from 'expo-router';
 import { useState } from 'react';
@@ -8,7 +8,7 @@ import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useDoctrine } from '../../state/doctrine.tsx';
 import { useCasualty, useStore } from '../../state/store.tsx';
-import { assess, nextPrompt, type StepView } from '../../triage/assess.ts';
+import { assess, nextPrompt, nextToSieve, type StepView } from '../../triage/assess.ts';
 import { progress } from '../../triage/progress.ts';
 import {
   BigButton,
@@ -29,7 +29,7 @@ export default function Summary() {
   const { id } = useLocalSearchParams<{ id: string }>();
   const casualty = useCasualty(id);
   const doctrine = useDoctrine().doctrine!;
-  const { dispatch } = useStore();
+  const { state, dispatch } = useStore();
   const insets = useSafeAreaInsets();
   const now = useNow();
   const t = useTheme();
@@ -43,6 +43,7 @@ export default function Summary() {
   const next = nextPrompt(doctrine, casualty);
   const moreToAsk = next !== null;
   const { answered, total } = progress(doctrine, casualty, next);
+  const nextCasualty = nextToSieve(doctrine, state.casualties, casualty.id);
   const questionLabel = (key: string) => doctrine.questions.find((q) => q.key === key)?.label ?? key;
 
   return (
@@ -54,6 +55,7 @@ export default function Summary() {
       />
 
       <ScrollView contentContainerStyle={styles.body}>
+        <CategoryBadge category={a.category} />
         {a.category === null && (
           <Label style={[styles.callout, { color: t.warning }]}>
             {a.injuries.length === 0
@@ -108,11 +110,29 @@ export default function Summary() {
       </ScrollView>
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + 12, borderColor: t.border }]}>
-        {moreToAsk && (
+        {moreToAsk ? (
           <BigButton
-            label={answered < total ? `Keep asking (${total - answered} left)` : 'Keep asking'}
+            label={answered < total ? `Keep asking (up to ${total - answered})` : 'Keep asking'}
             icon="chevron"
             onPress={() => router.replace(`/casualty/${casualty.id}`)}
+          />
+        ) : nextCasualty ? (
+          <BigButton
+            big
+            label={`Next: ${nextCasualty.name}`}
+            icon="chevron"
+            color={t.yes}
+            textColor={t.onAnswer}
+            onPress={() => router.replace(`/casualty/${nextCasualty.id}`)}
+          />
+        ) : (
+          <BigButton
+            big
+            label="See everyone"
+            icon="list"
+            color={t.yes}
+            textColor={t.onAnswer}
+            onPress={() => router.replace('/categories')}
           />
         )}
         <View style={styles.row}>
