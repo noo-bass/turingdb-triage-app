@@ -2,10 +2,10 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect, useState } from 'react';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
 
-import { GRAPH, query } from './src/graph/triageGraph';
+import { GRAPH, query } from '../graph/triageGraph.ts';
 
-// Phase 0 check: the on-device TuringDB answers from the triage graph.
-// Replaced by the triage screens in Phase 2.
+// Engine check: the on-device TuringDB answers four spec queries from the
+// triage graph, with timings. Reached from the home screen's menu.
 type Check = { label: string; cypher: string; result?: string; ms?: number; error?: string };
 
 const CHECKS: Check[] = [
@@ -26,7 +26,7 @@ const CHECKS: Check[] = [
   },
 ];
 
-export default function App() {
+export default function EngineCheck() {
   const [checks, setChecks] = useState<Check[]>(CHECKS);
 
   useEffect(() => {

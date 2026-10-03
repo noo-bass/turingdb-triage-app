@@ -37,8 +37,10 @@
             ]
           }
         }
-      ]
+      ],
+      "expo-router"
     ],
-    "backgroundColor": "#000000"
+    "backgroundColor": "#000000",
+    "scheme": "triage"
   }
 }

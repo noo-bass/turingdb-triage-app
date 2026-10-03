@@ -7,6 +7,8 @@ import { parseEnvelope, type Row } from './envelope';
 // Named after the bundled file, so a new graph version loads as a new graph
 // instead of reusing the one an older app version left on the phone
 export const GRAPH = 'triage_v3';
+// require() is how React Native references a bundled asset
+// eslint-disable-next-line @typescript-eslint/no-require-imports
 const GRAPH_ASSET = require('../../assets/graph/triage_v3.jsonl');
 
 let opening: Promise<void> | null = null;

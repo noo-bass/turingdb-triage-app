@@ -1,3 +1,7 @@
 # Prebuilt engine, copied in by app/scripts/sync-engine.sh
 ios/Frameworks/
 android/engine/
+
+# Gradle native build output
+android/.cxx/
+android/build/
