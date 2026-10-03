@@ -13,6 +13,7 @@ export type Casualty = {
   answers: Record<string, Answer>; // by question key
   kit: Record<string, boolean>; // by kit key: does the soldier have it
   tourniquetAt: number | null; // when a tourniquet went on (never removed: decision 7)
+  history: string[]; // answered keys in order ('kit:<key>' for kit), for undo
 };
 
 export type FoundInjury = {
@@ -38,7 +39,30 @@ export type Assessment = {
 export type Prompt = { kind: 'kit'; question: KitQuestion } | { kind: 'question'; question: Question };
 
 export function newCasualty(id: string, name: string, now: number): Casualty {
-  return { id, name, createdAt: now, answers: {}, kit: {}, tourniquetAt: null };
+  return { id, name, createdAt: now, answers: {}, kit: {}, tourniquetAt: null, history: [] };
+}
+
+export function answer(c: Casualty, questionKey: string, value: Answer): Casualty {
+  return { ...c, answers: { ...c.answers, [questionKey]: value }, history: [...c.history, questionKey] };
+}
+
+export function answerKit(c: Casualty, kitKey: string, has: boolean): Casualty {
+  return { ...c, kit: { ...c.kit, [kitKey]: has }, history: [...c.history, `kit:${kitKey}`] };
+}
+
+// Takes back the last answer (question or kit)
+export function undo(c: Casualty): Casualty {
+  const last = c.history.at(-1);
+  if (last === undefined) {
+    return c;
+  }
+  const history = c.history.slice(0, -1);
+  if (last.startsWith('kit:')) {
+    const { [last.slice(4)]: _, ...kit } = c.kit;
+    return { ...c, kit, history };
+  }
+  const { [last]: _, ...answers } = c.answers;
+  return { ...c, answers, history };
 }
 
 export function assess(d: Doctrine, c: Casualty): Assessment {

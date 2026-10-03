@@ -2,7 +2,16 @@
 import assert from 'node:assert/strict';
 import { after, before, test } from 'node:test';
 
-import { assess, newCasualty, nextPrompt, type Answer, type Casualty } from '../src/triage/assess.ts';
+import {
+  answer,
+  answerKit,
+  assess,
+  newCasualty,
+  nextPrompt,
+  undo,
+  type Answer,
+  type Casualty,
+} from '../src/triage/assess.ts';
 import { loadDoctrine, type Doctrine } from '../src/triage/doctrine.ts';
 import { startEngine, type Engine } from './support/engine.ts';
 
@@ -56,7 +65,12 @@ test('with a tourniquet the hasty tourniquet is a do-now step; medic steps stay 
 });
 
 test('without the kit a soldier step becomes a medic step', () => {
-  const kit = { tourniquet: false, wound_dressing: false, pressure_bandage: false, haemostatic_dressing: false };
+  const kit = {
+    tourniquet: false,
+    wound_dressing: false,
+    pressure_bandage: false,
+    haemostatic_dressing: false,
+  };
   const a = assess(d, casualty({ bleeding_severe: 'yes' }, kit));
   assert.deepEqual(labels(a.doNow), []);
   assert.ok(labels(a.needsMedic).includes('Apply hasty tourniquet'));
@@ -96,4 +110,16 @@ test('"unsure" counts as asked but indicates nothing', () => {
   assert.deepEqual(assess(d, c).injuries, []);
   const next = nextPrompt(d, c);
   assert.notEqual(next?.kind === 'question' && next.question.key, 'bleeding_severe');
+});
+
+test('undo takes back answers and kit in reverse order', () => {
+  let c = newCasualty('c1', 'C1', 0);
+  c = answer(c, 'bleeding_severe', 'yes');
+  c = answerKit(c, 'tourniquet', true);
+  c = undo(c);
+  assert.deepEqual(c.kit, {});
+  assert.equal(c.answers.bleeding_severe, 'yes');
+  c = undo(c);
+  assert.deepEqual(c.answers, {});
+  assert.deepEqual(undo(c), c);
 });
