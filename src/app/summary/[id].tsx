@@ -13,9 +13,9 @@ import {
   BigButton,
   CategoryBadge,
   DraftBanner,
-  IconButton,
   Label,
   Screen,
+  ScreenHeader,
   sourceLine,
   useTheme,
 } from '../../ui/components.tsx';
@@ -44,11 +44,11 @@ export default function Summary() {
 
   return (
     <Screen>
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <IconButton icon="back" label="All casualties" onPress={() => router.navigate('/')} />
-        <Text style={[styles.name, { color: t.text }]}>{casualty.name}</Text>
-        <CategoryBadge category={a.category} />
-      </View>
+      <ScreenHeader
+        title={casualty.name}
+        onBack={() => router.navigate('/')}
+        badge={<CategoryBadge category={a.category} compact />}
+      />
 
       <ScrollView contentContainerStyle={styles.body}>
         {a.category === null && (
@@ -113,14 +113,9 @@ export default function Summary() {
           />
         )}
         <View style={styles.row}>
+          <BigButton label="Casualties" onPress={() => router.navigate('/')} style={styles.flex} />
           <BigButton
-            label="All casualties"
-            icon="list"
-            onPress={() => router.navigate('/')}
-            style={styles.flex}
-          />
-          <BigButton
-            label={confirmEvacuated ? 'Tap to confirm' : 'Evacuated'}
+            label={confirmEvacuated ? 'Confirm' : 'Evacuated'}
             onPress={() => {
               if (!confirmEvacuated) {
                 setConfirmEvacuated(true);
@@ -152,7 +147,9 @@ function Section({
     <View style={[styles.section, { backgroundColor: t.surface, borderColor: t.border }]}>
       <View style={styles.row}>
         <Icon name={icon} color={t.text} />
-        <Text style={[styles.sectionTitle, { color: t.text }]}>{title}</Text>
+        <Text maxFontSizeMultiplier={size.maxTextScale} style={[styles.sectionTitle, { color: t.text }]}>
+          {title}
+        </Text>
       </View>
       {children}
     </View>
@@ -176,14 +173,6 @@ function StepRow({ step, muted }: { step: StepView; muted?: boolean }) {
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    gap: 12,
-    paddingHorizontal: size.gutter,
-    paddingBottom: 8,
-  },
-  name: { fontSize: 30, fontWeight: '800' },
   body: { padding: size.gutter, gap: 14 },
   callout: { fontWeight: '700', fontSize: 20, lineHeight: 28 },
   section: { borderRadius: size.radius, borderWidth: 1, padding: 16, gap: 12 },

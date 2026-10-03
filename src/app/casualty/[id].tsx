@@ -14,6 +14,7 @@ import {
   IconButton,
   Label,
   Screen,
+  ScreenHeader,
   sourceLine,
   useTheme,
 } from '../../ui/components.tsx';
@@ -67,19 +68,27 @@ export default function CasualtyQuestions() {
 
   return (
     <Screen>
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <IconButton icon="back" label="All casualties" onPress={() => router.navigate('/')} />
-        <Text style={[styles.name, { color: t.text }]}>{casualty.name}</Text>
-        <CategoryBadge category={category} />
-        <View style={styles.spacer} />
-        <IconButton icon="medic" label="What to do" onPress={() => router.push(`/summary/${casualty.id}`)} />
-      </View>
+      <ScreenHeader
+        title={casualty.name}
+        onBack={() => router.navigate('/')}
+        badge={<CategoryBadge category={category} compact />}
+        right={
+          <IconButton
+            icon="medic"
+            label="What to do"
+            onPress={() => router.push(`/summary/${casualty.id}`)}
+          />
+        }
+      />
 
       <View style={styles.question}>
         <Label muted style={styles.context}>
           {context.toUpperCase()}
         </Label>
-        <Text style={[styles.questionText, { color: t.text }]} accessibilityRole="header">
+        <Text
+          maxFontSizeMultiplier={size.maxTextScale}
+          style={[styles.questionText, { color: t.text }]}
+          accessibilityRole="header">
           {question.label}
         </Text>
         {cue && (
@@ -144,9 +153,6 @@ export default function CasualtyQuestions() {
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: size.gutter },
-  name: { fontSize: 30, fontWeight: '800' },
-  spacer: { flex: 1 },
   question: { flex: 1, justifyContent: 'center', paddingHorizontal: size.gutter, gap: 12 },
   context: { fontSize: 16, fontWeight: '700', letterSpacing: 1.5 },
   questionText: { fontSize: size.question, fontWeight: '800', lineHeight: size.question * 1.2 },

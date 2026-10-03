@@ -2,7 +2,6 @@
 
 import { router } from 'expo-router';
 import { ScrollView, StyleSheet, Text, View } from 'react-native';
-import { useSafeAreaInsets } from 'react-native-safe-area-context';
 
 import { useDoctrine } from '../state/doctrine.tsx';
 import { useStore } from '../state/store.tsx';
@@ -11,9 +10,9 @@ import {
   BigButton,
   CategoryBadge,
   DraftBanner,
-  IconButton,
   Label,
   Screen,
+  ScreenHeader,
   sourceLine,
   useTheme,
 } from '../ui/components.tsx';
@@ -23,7 +22,6 @@ import { useNow } from '../ui/useNow.ts';
 export default function Seats() {
   const { state, dispatch } = useStore();
   const doctrine = useDoctrine().doctrine!;
-  const insets = useSafeAreaInsets();
   const now = useNow();
   const t = useTheme();
 
@@ -33,10 +31,7 @@ export default function Seats() {
 
   return (
     <Screen>
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <IconButton icon="back" label="All casualties" onPress={() => router.navigate('/')} />
-        <Text style={[styles.title, { color: t.text }]}>Seats</Text>
-      </View>
+      <ScreenHeader title="Seats" big onBack={() => router.navigate('/')} />
 
       <View style={styles.stepper}>
         <BigButton
@@ -44,7 +39,10 @@ export default function Seats() {
           onPress={() => dispatch({ type: 'seats', seats: state.seats - 1 })}
           style={styles.stepButton}
         />
-        <Text style={[styles.count, { color: t.text }]} accessibilityLabel={`${state.seats} seats`}>
+        <Text
+          maxFontSizeMultiplier={size.maxTextScale}
+          style={[styles.count, { color: t.text }]}
+          accessibilityLabel={`${state.seats} seats`}>
           {state.seats}
         </Text>
         <BigButton
@@ -58,7 +56,7 @@ export default function Seats() {
         <Group title="Seated" people={group('yes')} />
         {contested.length > 0 && (
           <View style={styles.group}>
-            <Text style={[styles.groupTitle, { color: t.warning }]}>
+            <Text maxFontSizeMultiplier={size.maxTextScale} style={[styles.groupTitle, { color: t.warning }]}>
               Contested: {plan.contestedSeats} {plan.contestedSeats === 1 ? 'seat' : 'seats'} for{' '}
               {contested.length}
             </Text>
@@ -86,7 +84,9 @@ function Group({ title, people }: { title: string; people: Placement[] }) {
   }
   return (
     <View style={styles.group}>
-      <Text style={[styles.groupTitle, { color: t.text }]}>{title}</Text>
+      <Text maxFontSizeMultiplier={size.maxTextScale} style={[styles.groupTitle, { color: t.text }]}>
+        {title}
+      </Text>
       {people.map((p) => (
         <Card key={p.casualty.id} placement={p} />
       ))}
@@ -101,7 +101,9 @@ function Card({ placement, compact }: { placement: Placement; compact?: boolean 
     <View
       style={[styles.card, compact && styles.compact, { backgroundColor: t.surface, borderColor: t.border }]}>
       <View style={styles.cardTop}>
-        <Text style={[styles.name, { color: t.text }]}>{casualty.name}</Text>
+        <Text maxFontSizeMultiplier={size.maxTextScale} style={[styles.name, { color: t.text }]}>
+          {casualty.name}
+        </Text>
         <CategoryBadge category={assessment.category} />
       </View>
       {reasons.map((r, i) => {
@@ -118,8 +120,6 @@ function Card({ placement, compact }: { placement: Placement; compact?: boolean 
 }
 
 const styles = StyleSheet.create({
-  header: { flexDirection: 'row', alignItems: 'center', gap: 12, paddingHorizontal: size.gutter },
-  title: { fontSize: 34, fontWeight: '800' },
   stepper: { flexDirection: 'row', alignItems: 'center', gap: 16, padding: size.gutter },
   stepButton: { width: 96, height: 96 },
   count: { flex: 1, textAlign: 'center', fontSize: 64, fontWeight: '800' },
@@ -129,7 +129,14 @@ const styles = StyleSheet.create({
   sideBySide: { flexDirection: 'row', flexWrap: 'wrap', gap: 10 },
   card: { borderRadius: size.radius, borderWidth: 1, padding: 16, gap: 8 },
   compact: { flexBasis: '47%', flexGrow: 1 },
-  cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  // wraps so the badge drops under the name in the narrow side-by-side cards
+  cardTop: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    gap: 8,
+  },
   name: { fontSize: 32, fontWeight: '800' },
   reason: { fontSize: 17 },
 });

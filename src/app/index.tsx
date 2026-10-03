@@ -15,6 +15,7 @@ import {
   IconButton,
   Label,
   Screen,
+  ScreenHeader,
   useTheme,
 } from '../ui/components.tsx';
 import { Icon } from '../ui/Icon.tsx';
@@ -41,17 +42,20 @@ export default function Home() {
 
   return (
     <Screen>
-      <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
-        <Text style={[styles.title, { color: t.text }]}>Casualties</Text>
-        <View style={styles.headerButtons}>
-          <IconButton
-            icon={state.mode === 'red' ? 'sun' : 'moon'}
-            label={state.mode === 'red' ? 'Normal colours' : 'Red night mode'}
-            onPress={() => dispatch({ type: 'mode', mode: state.mode === 'red' ? 'dark' : 'red' })}
-          />
-          <IconButton icon="list" label="Engine check" onPress={() => router.push('/engine-check')} />
-        </View>
-      </View>
+      <ScreenHeader
+        title="Casualties"
+        big
+        right={
+          <>
+            <IconButton
+              icon={state.mode === 'red' ? 'sun' : 'moon'}
+              label={state.mode === 'red' ? 'Normal colours' : 'Red night mode'}
+              onPress={() => dispatch({ type: 'mode', mode: state.mode === 'red' ? 'dark' : 'red' })}
+            />
+            <IconButton icon="list" label="Engine check" onPress={() => router.push('/engine-check')} />
+          </>
+        }
+      />
 
       <ScrollView contentContainerStyle={styles.list}>
         <DraftBanner />
@@ -74,14 +78,10 @@ export default function Home() {
 
       <View style={[styles.footer, { paddingBottom: insets.bottom + 12, borderColor: t.border }]}>
         {state.casualties.length > 0 && (
-          <BigButton
-            label={`Seats: ${state.seats}`}
-            icon="seat"
-            onPress={() => router.push('/seats')}
-            style={styles.seatsButton}
-          />
+          <BigButton label={`Seats: ${state.seats}`} icon="seat" onPress={() => router.push('/seats')} />
         )}
-        <BigButton label="Add casualty" icon="plus" onPress={add} style={styles.addButton} />
+        {/* Add sits lowest, under the thumb: it is the first thing done here */}
+        <BigButton label="Add casualty" icon="plus" onPress={add} />
       </View>
     </Screen>
   );
@@ -110,7 +110,12 @@ function CasualtyCard({
         { backgroundColor: pressed ? t.surfacePressed : t.surface, borderColor: t.border },
       ]}>
       <View style={styles.cardTop}>
-        <Text style={[styles.name, { color: t.text }]}>{casualty.name}</Text>
+        <Text
+          numberOfLines={1}
+          maxFontSizeMultiplier={size.maxTextScale}
+          style={[styles.name, { color: t.text }]}>
+          {casualty.name}
+        </Text>
         <CategoryBadge category={assessment.category} />
       </View>
       {showSeat && (
@@ -135,30 +140,18 @@ function CasualtyCard({
 }
 
 const styles = StyleSheet.create({
-  header: {
-    flexDirection: 'row',
-    alignItems: 'center',
-    justifyContent: 'space-between',
-    paddingHorizontal: size.gutter,
-    paddingBottom: 8,
-  },
-  headerButtons: { flexDirection: 'row', gap: 10 },
-  title: { fontSize: 34, fontWeight: '800' },
   list: { padding: size.gutter, gap: 14 },
   empty: { marginTop: 24, lineHeight: 28 },
   card: { borderRadius: size.radius, borderWidth: 1, padding: 18, gap: 10 },
-  cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between' },
-  name: { fontSize: 40, fontWeight: '800' },
+  cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
+  name: { fontSize: 40, fontWeight: '800', flexShrink: 1 },
   seat: { fontWeight: '700' },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   next: { flex: 1 },
   footer: {
-    flexDirection: 'row',
     gap: 12,
     paddingHorizontal: size.gutter,
     paddingTop: 12,
     borderTopWidth: 1,
   },
-  seatsButton: { flex: 1 },
-  addButton: { flex: 1.4 },
 });
