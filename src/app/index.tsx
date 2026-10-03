@@ -14,6 +14,7 @@ import { planOrder, type Placement } from '../triage/order.ts';
 import { progress } from '../triage/progress.ts';
 import {
   BigButton,
+  CasualtyPhoto,
   CategoryBadge,
   DraftBanner,
   IconButton,
@@ -170,6 +171,7 @@ function CasualtyCard({ placement, now }: { placement: Placement; now: number })
         { backgroundColor: pressed ? t.surfacePressed : t.surface, borderColor: t.border },
       ]}>
       <View style={styles.cardTop}>
+        <CasualtyPhoto casualty={casualty} />
         <Text
           numberOfLines={1}
           maxFontSizeMultiplier={size.maxTextScale}
@@ -208,8 +210,9 @@ const styles = StyleSheet.create({
   list: { padding: size.gutter, gap: 14 },
   reset: { marginTop: 24 },
   card: { borderRadius: size.radius, borderWidth: 1, padding: 18, gap: 10 },
-  cardTop: { flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between', gap: 8 },
-  name: { fontSize: 40, fontWeight: '800', flexShrink: 1 },
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: 10 },
+  // the name keeps its width; the badge shrinks (a cut-off name could be misread)
+  name: { fontSize: 40, fontWeight: '800', flexGrow: 1, flexShrink: 0 },
   row: { flexDirection: 'row', alignItems: 'center', gap: 8 },
   next: { flex: 1 },
   footer: {

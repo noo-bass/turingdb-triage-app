@@ -12,6 +12,7 @@ import { assess, nextPrompt, nextToSieve, type StepView } from '../../triage/ass
 import { progress } from '../../triage/progress.ts';
 import {
   BigButton,
+  CasualtyPhoto,
   CategoryBadge,
   DraftBanner,
   Label,
@@ -55,7 +56,10 @@ export default function Summary() {
       />
 
       <ScrollView contentContainerStyle={styles.body}>
-        <CategoryBadge category={a.category} />
+        <View style={styles.row}>
+          <CasualtyPhoto casualty={casualty} editable size={72} />
+          <CategoryBadge category={a.category} />
+        </View>
         {a.category === null && (
           <Label style={[styles.callout, { color: t.warning }]}>
             {a.injuries.length === 0

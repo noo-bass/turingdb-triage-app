@@ -17,6 +17,7 @@ import {
   type TourniquetWindow,
 } from '../triage/assess.ts';
 import type { Mode } from '../ui/theme.ts';
+import { prunePhotos } from './photos.ts';
 
 export type State = {
   casualties: Casualty[];
@@ -32,6 +33,7 @@ type Action =
   | { type: 'tieTourniquet'; id: string; window: TourniquetWindow | 'none' }
   | { type: 'tieRecheck'; id: string; value: Answer }
   | { type: 'tieUndo' }
+  | { type: 'photo'; id: string; name: string }
   | { type: 'answer'; id: string; question: string; value: Answer }
   | { type: 'kit'; id: string; kit: string; has: boolean }
   | { type: 'undo'; id: string }
@@ -71,6 +73,8 @@ function reduce(state: State, action: Action): State {
         ...update(action.id, (c) => answerRecheck(c, action.value)),
         tieHistory: [...state.tieHistory, action.id],
       };
+    case 'photo':
+      return update(action.id, (c) => ({ ...c, photo: action.name }));
     case 'tieUndo': {
       const id = state.tieHistory.at(-1);
       return id === undefined ? state : { ...update(id, undo), tieHistory: state.tieHistory.slice(0, -1) };
@@ -115,6 +119,7 @@ function load(): State {
         ...c,
         tourniquetWindow: c.tourniquetWindow ?? null,
         recheck: c.recheck ?? null,
+        photo: c.photo ?? null,
       })),
     };
   } catch {
@@ -135,6 +140,9 @@ const Store = createContext<{ state: State; dispatch: (a: Action) => void } | nu
 export function StoreProvider({ children }: { children: ReactNode }) {
   const [state, dispatch] = useReducer(reduce, undefined, load);
   useEffect(() => save(state), [state]);
+  // photos of evacuated, reset or retaken casualties go once nothing uses them
+  const inUse = state.casualties.map((c) => c.photo ?? '').join();
+  useEffect(() => prunePhotos(new Set(inUse.split(','))), [inUse]);
   return <Store.Provider value={{ state, dispatch }}>{children}</Store.Provider>;
 }
 

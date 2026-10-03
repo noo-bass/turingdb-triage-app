@@ -17,6 +17,7 @@ export type Casualty = {
   // on as a window (a bucket, never a made-up exact time). null: not asked
   tourniquetWindow: TourniquetWindow | 'none' | null;
   recheck: Answer | null; // the shock question asked again at tie-break time
+  photo: string | null; // file name of their photo on this phone (state/photos.ts)
   history: string[]; // answered keys in order ('kit:<key>', 'tie:<factor>'), for undo
 };
 
@@ -55,6 +56,7 @@ export function newCasualty(id: string, name: string, now: number): Casualty {
     tourniquetAt: null,
     tourniquetWindow: null,
     recheck: null,
+    photo: null,
     history: [],
   };
 }

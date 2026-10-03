@@ -14,6 +14,7 @@ import { formatDuration } from '../../triage/format.ts';
 import { progress, SECTION_NAMES, whyAsked, type Progress, type Why } from '../../triage/progress.ts';
 import {
   BigButton,
+  CasualtyPhoto,
   CategoryBadge,
   categoryWord,
   IconButton,
@@ -84,7 +85,13 @@ export default function CasualtyQuestions() {
         }
       />
 
-      <ProgressStrip progress={where} kit={prompt.kind === 'kit'} who={who} />
+      {/* their photo beside where we are: tap it to take one */}
+      <View style={styles.idRow}>
+        <CasualtyPhoto casualty={casualty} editable />
+        <View style={styles.flex}>
+          <ProgressStrip progress={where} kit={prompt.kind === 'kit'} who={who} />
+        </View>
+      </View>
 
       {/* Scrolls rather than clips when a long question, cue and the why
           panel together outgrow the space above the answers */}
@@ -289,7 +296,14 @@ function WhyPanel({ why }: { why: Why }) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
-  progress: { paddingHorizontal: size.gutter, paddingTop: 4, gap: 6 },
+  idRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 10,
+    paddingHorizontal: size.gutter,
+    paddingTop: 4,
+  },
+  progress: { gap: 6 },
   strip: { flexDirection: 'row', gap: 6 },
   segment: {
     flex: 1,

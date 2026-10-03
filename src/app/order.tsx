@@ -10,6 +10,7 @@ import { useStore } from '../state/store.tsx';
 import { planOrder } from '../triage/order.ts';
 import {
   BigButton,
+  CasualtyPhoto,
   CategoryBadge,
   DraftBanner,
   Label,
@@ -45,6 +46,7 @@ export default function Order() {
               <Text maxFontSizeMultiplier={size.maxTextScale} style={[styles.place, { color: t.text }]}>
                 {i + 1}
               </Text>
+              <CasualtyPhoto casualty={p.casualty} size={44} />
               <Text
                 numberOfLines={1}
                 maxFontSizeMultiplier={size.maxTextScale}

@@ -12,6 +12,7 @@ import { planOrder, type Placement } from '../triage/order.ts';
 import { tieQuestionsLeft } from '../triage/ties.ts';
 import {
   BigButton,
+  CasualtyPhoto,
   CategoryBadge,
   DraftBanner,
   Label,
@@ -118,6 +119,7 @@ function Row({ placement }: { placement: Placement }) {
         styles.row,
         { backgroundColor: pressed ? t.surfacePressed : t.surface, borderColor: t.border },
       ]}>
+      <CasualtyPhoto casualty={casualty} size={48} />
       <View style={styles.rowText}>
         <Text maxFontSizeMultiplier={size.maxTextScale} style={[styles.name, { color: t.text }]}>
           {casualty.name}

@@ -10,7 +10,15 @@ import { useDoctrine } from '../state/doctrine.tsx';
 import { useStore } from '../state/store.tsx';
 import { assess, type Answer } from '../triage/assess.ts';
 import { nextTieQuestion, tieQuestionsLeft, TOURNIQUET_BUCKETS } from '../triage/ties.ts';
-import { BigButton, categoryWord, Label, Screen, ScreenHeader, useTheme } from '../ui/components.tsx';
+import {
+  BigButton,
+  CasualtyPhoto,
+  categoryWord,
+  Label,
+  Screen,
+  ScreenHeader,
+  useTheme,
+} from '../ui/components.tsx';
 import { size } from '../ui/theme.ts';
 import { useNow } from '../ui/useNow.ts';
 
@@ -49,6 +57,7 @@ export default function Ties() {
       </Text>
 
       <ScrollView style={styles.flex} contentContainerStyle={styles.question}>
+        <CasualtyPhoto casualty={q.casualty} size={96} />
         <Label muted style={styles.context}>
           {name} · {category} · TIED WITH {others}
         </Label>

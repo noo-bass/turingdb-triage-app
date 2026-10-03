@@ -1,10 +1,12 @@
 import * as Haptics from 'expo-haptics';
-import { type ReactNode } from 'react';
-import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useState, type ReactNode } from 'react';
+import { Image, Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
+import { photoUri, takePhoto } from '../state/photos.ts';
 import { useStore } from '../state/store.tsx';
+import type { Casualty } from '../triage/assess.ts';
 import type { Category } from '../triage/doctrine.ts';
 import type { Reason } from '../triage/order.ts';
 import { Icon, type IconName } from './Icon.tsx';
@@ -214,6 +216,62 @@ export function CategoryBadge({
   );
 }
 
+// Their photo, so the soldier can tell casualties apart at a glance. editable:
+// tap to take (or retake) it. Dimmed in red night mode for light discipline.
+export function CasualtyPhoto({
+  casualty,
+  size: s = 56,
+  editable = false,
+}: {
+  casualty: Casualty;
+  size?: number;
+  editable?: boolean;
+}) {
+  const t = useTheme();
+  const { state, dispatch } = useStore();
+  const [busy, setBusy] = useState(false);
+  if (!editable && !casualty.photo) {
+    return null;
+  }
+  const box = { width: s, height: s, borderRadius: s / 4 };
+  const picture = casualty.photo ? (
+    <Image
+      source={{ uri: photoUri(casualty.photo) }}
+      style={[box, { opacity: state.mode === 'red' ? 0.45 : 1 }]}
+      accessibilityIgnoresInvertColors
+    />
+  ) : (
+    <View style={[box, styles.noPhoto, { borderColor: t.border, backgroundColor: t.surface }]}>
+      <Icon name="camera" color={t.text} size={Math.round(s * 0.5)} />
+    </View>
+  );
+  if (!editable) {
+    return <View accessibilityLabel={`Photo of ${casualty.name}`}>{picture}</View>;
+  }
+  return (
+    <Pressable
+      accessibilityRole="button"
+      accessibilityLabel={
+        casualty.photo ? `Retake photo of ${casualty.name}` : `Add a photo of ${casualty.name}`
+      }
+      disabled={busy}
+      hitSlop={8}
+      onPress={async () => {
+        setBusy(true);
+        try {
+          const name = await takePhoto(casualty.id);
+          if (name) {
+            dispatch({ type: 'photo', id: casualty.id, name });
+          }
+        } finally {
+          setBusy(false);
+        }
+      }}>
+      {picture}
+    </Pressable>
+  );
+}
+
 // Each reason says whether it is doctrine (with its source) or our rule
 export function ReasonLines({ reasons }: { reasons: Reason[] }) {
   return (
@@ -280,6 +338,7 @@ const styles = StyleSheet.create({
     padding: 12,
   },
   reason: { fontSize: 17 },
+  noPhoto: { borderWidth: 1, borderStyle: 'dashed', alignItems: 'center', justifyContent: 'center' },
   bannerText: { flex: 1, fontSize: 15, fontWeight: '600' },
   badge: {
     flexDirection: 'row',

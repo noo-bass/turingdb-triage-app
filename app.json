@@ -38,7 +38,14 @@
           }
         }
       ],
-      "expo-router"
+      "expo-router",
+      [
+        "expo-image-picker",
+        {
+          "cameraPermission": "Triage uses the camera to take a photo of each casualty, so you can tell them apart. Photos stay on this phone.",
+          "photosPermission": "Triage can use a photo you already took to identify a casualty. Photos stay on this phone."
+        }
+      ]
     ],
     "backgroundColor": "#000000",
     "scheme": "triage"

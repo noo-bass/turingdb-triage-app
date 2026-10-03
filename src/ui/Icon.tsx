@@ -12,6 +12,7 @@ export type IconName =
   | 'cross'
   | 'help'
   | 'info'
+  | 'camera'
   | 'clock'
   | 'moon'
   | 'sun'
@@ -36,6 +37,13 @@ const PATHS: Record<IconName, (c: string) => React.ReactNode> = {
     <>
       <Circle cx={12} cy={12} r={9.5} />
       <Path d="M12 11v6M12 7.3v.1" />
+    </>
+  ),
+  camera: () => (
+    <>
+      <Rect x={2.5} y={6.5} width={19} height={14} rx={3} />
+      <Path d="M8 6.5l1.5-3h5l1.5 3" />
+      <Circle cx={12} cy={13.5} r={3.5} />
     </>
   ),
   clock: () => (
