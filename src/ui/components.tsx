@@ -1,6 +1,7 @@
 import * as Haptics from 'expo-haptics';
 import { type ReactNode } from 'react';
 import { Pressable, StyleSheet, Text, View, type StyleProp, type ViewStyle } from 'react-native';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
 import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { useStore } from '../state/store.tsx';
@@ -48,8 +49,14 @@ export function BigButton({
         { backgroundColor: pressed ? t.surfacePressed : (color ?? t.surface), borderColor: t.border },
         style,
       ]}>
-      {icon && <Icon name={icon} color={fg} size={big ? 40 : 28} />}
-      <Text style={[styles.buttonText, { color: fg, fontSize: big ? size.answer : size.textLarge }]}>
+      {icon && <Icon name={icon} color={fg} size={big ? 40 : 26} />}
+      {/* One line always: a label that wraps mid-button reads as two buttons */}
+      <Text
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.7}
+        maxFontSizeMultiplier={size.maxTextScale}
+        style={[styles.buttonText, { color: fg, fontSize: big ? size.answer : size.button }]}>
         {label}
       </Text>
     </Pressable>
@@ -77,6 +84,40 @@ export function IconButton({ icon, label, onPress }: { icon: IconName; label: st
   );
 }
 
+// The top bar every screen shares: optional back, a title that gives way
+// (never the buttons), optional badge, then the right-hand buttons
+export function ScreenHeader({
+  title,
+  big = false,
+  onBack,
+  badge,
+  right,
+}: {
+  title: string;
+  big?: boolean;
+  onBack?: () => void;
+  badge?: ReactNode;
+  right?: ReactNode;
+}) {
+  const t = useTheme();
+  const insets = useSafeAreaInsets();
+  return (
+    <View style={[styles.header, { paddingTop: insets.top + 8 }]}>
+      {onBack && <IconButton icon="back" label="All casualties" onPress={onBack} />}
+      <View style={styles.headerTitle}>
+        <Text
+          numberOfLines={1}
+          maxFontSizeMultiplier={size.maxTextScale}
+          style={[styles.title, { color: t.text, fontSize: big ? 34 : 30 }]}>
+          {title}
+        </Text>
+        {badge}
+      </View>
+      {right}
+    </View>
+  );
+}
+
 export function Screen({ children }: { children: ReactNode }) {
   const t = useTheme();
   return <View style={[styles.screen, { backgroundColor: t.background }]}>{children}</View>;
@@ -85,7 +126,11 @@ export function Screen({ children }: { children: ReactNode }) {
 export function Label({ children, muted, style }: { children: ReactNode; muted?: boolean; style?: object }) {
   const t = useTheme();
   return (
-    <Text style={[{ color: muted ? t.textMuted : t.text, fontSize: size.text }, style]}>{children}</Text>
+    <Text
+      maxFontSizeMultiplier={size.maxTextScale}
+      style={[{ color: muted ? t.textMuted : t.text, fontSize: size.text }, style]}>
+      {children}
+    </Text>
   );
 }
 
@@ -94,7 +139,7 @@ export function DraftBanner() {
   return (
     <View style={[styles.banner, { borderColor: t.warning }]}>
       <Icon name="alert" color={t.warning} size={22} />
-      <Text style={[styles.bannerText, { color: t.warning }]}>
+      <Text maxFontSizeMultiplier={size.maxTextScale} style={[styles.bannerText, { color: t.warning }]}>
         Not a medical device. Draft doctrine, awaiting medic review.
       </Text>
     </View>
@@ -112,8 +157,7 @@ const WORD: Record<CategoryKey, string> = {
 };
 
 // Word plus shape, so it reads without colour (red night mode, colour blindness)
-function CategoryShape({ category, color }: { category: CategoryKey; color: string }) {
-  const s = 22;
+function CategoryShape({ category, color, s }: { category: CategoryKey; color: string; s: number }) {
   return (
     <Svg
       width={s}
@@ -131,14 +175,30 @@ function CategoryShape({ category, color }: { category: CategoryKey; color: stri
   );
 }
 
-export function CategoryBadge({ category }: { category: Category | null }) {
+// compact: the header size, so a badge beside a name never pushes buttons off-screen
+export function CategoryBadge({
+  category,
+  compact = false,
+}: {
+  category: Category | null;
+  compact?: boolean;
+}) {
   const t = useTheme();
   const key = (category?.key ?? 'unranked') as CategoryKey;
   const color = t.category[key];
   return (
-    <View style={[styles.badge, { borderColor: color }]} accessibilityLabel={WORD[key]}>
-      <CategoryShape category={key} color={color} />
-      <Text style={[styles.badgeText, { color }]}>{WORD[key]}</Text>
+    <View
+      style={[styles.badge, compact && styles.badgeCompact, { borderColor: color }]}
+      accessibilityLabel={WORD[key]}>
+      <CategoryShape category={key} color={color} s={compact ? 16 : 22} />
+      <Text
+        numberOfLines={1}
+        adjustsFontSizeToFit
+        minimumFontScale={0.7}
+        maxFontSizeMultiplier={size.maxTextScale}
+        style={[styles.badgeText, compact && styles.badgeTextCompact, { color }]}>
+        {WORD[key]}
+      </Text>
     </View>
   );
 }
@@ -161,10 +221,19 @@ const styles = StyleSheet.create({
     flexDirection: 'row',
     alignItems: 'center',
     justifyContent: 'center',
-    gap: 12,
-    paddingHorizontal: 20,
+    gap: 10,
+    paddingHorizontal: 16,
   },
-  buttonText: { fontWeight: '700' },
+  buttonText: { fontWeight: '700', flexShrink: 1 },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 12,
+    paddingHorizontal: size.gutter,
+    paddingBottom: 8,
+  },
+  headerTitle: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minWidth: 0 },
+  title: { fontWeight: '800', flexShrink: 1 },
   iconButton: {
     width: 56,
     height: 56,
@@ -191,6 +260,9 @@ const styles = StyleSheet.create({
     paddingHorizontal: 10,
     paddingVertical: 6,
     alignSelf: 'flex-start',
+    flexShrink: 1,
   },
-  badgeText: { fontSize: 18, fontWeight: '800', letterSpacing: 1 },
+  badgeCompact: { gap: 6, paddingHorizontal: 7, paddingVertical: 4, alignSelf: 'center' },
+  badgeText: { fontSize: 18, fontWeight: '800', letterSpacing: 1, flexShrink: 1 },
+  badgeTextCompact: { fontSize: 14, letterSpacing: 0.5 },
 });

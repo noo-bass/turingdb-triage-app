@@ -70,6 +70,10 @@ export const size = {
   minTarget: 72,
   text: 20,
   textLarge: 28,
+  button: 24,
   question: 34,
   answer: 40,
+  // iOS Larger Text still grows type, but the base sizes are already large,
+  // so past this the rows stop fitting a phone width
+  maxTextScale: 1.3,
 };
