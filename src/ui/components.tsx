@@ -6,6 +6,7 @@ import Svg, { Circle, Path, Rect } from 'react-native-svg';
 
 import { useStore } from '../state/store.tsx';
 import type { Category } from '../triage/doctrine.ts';
+import type { Reason } from '../triage/order.ts';
 import { Icon, type IconName } from './Icon.tsx';
 import { palettes, size, type Palette } from './theme.ts';
 
@@ -213,6 +214,23 @@ export function CategoryBadge({
   );
 }
 
+// Each reason says whether it is doctrine (with its source) or our rule
+export function ReasonLines({ reasons }: { reasons: Reason[] }) {
+  return (
+    <>
+      {reasons.map((r, i) => {
+        const source = r.sources ? sourceLine(r.sources) : null;
+        return (
+          <Label key={i} muted={r.basis === 'product_rule'} style={styles.reason}>
+            {r.text}
+            {r.basis === 'doctrine' ? ` (Doctrine${source ? `, ${source}` : ''})` : ' (Our rule)'}
+          </Label>
+        );
+      })}
+    </>
+  );
+}
+
 export function sourceLine(sources: { doc: string; page: number | null }[]): string | null {
   const s = sources.find((x) => x.doc === 'tccc-handbook') ?? sources[0];
   if (!s) {
@@ -261,6 +279,7 @@ const styles = StyleSheet.create({
     borderRadius: 12,
     padding: 12,
   },
+  reason: { fontSize: 17 },
   bannerText: { flex: 1, fontSize: 15, fontWeight: '600' },
   badge: {
     flexDirection: 'row',
