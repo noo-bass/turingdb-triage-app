@@ -40,7 +40,7 @@ export function tourniquetRange(c: Casualty, now: number): { min: number; max: n
   if (c.tourniquetAt !== null) {
     return { min: now - c.tourniquetAt, max: now - c.tourniquetAt };
   }
-  const w = c.tourniquetWindow ?? null;
+  const w = c.tourniquetWindow;
   if (w === null || w === 'none') {
     return null;
   }

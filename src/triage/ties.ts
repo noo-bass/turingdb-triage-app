@@ -40,7 +40,7 @@ function pending(d: Doctrine, casualties: Casualty[], now: number): TieQuestion[
         level(p.assessment) === level(q.assessment),
     ),
   );
-  const unknown = (c: Casualty) => c.tourniquetAt === null && (c.tourniquetWindow ?? null) === null;
+  const unknown = (c: Casualty) => c.tourniquetAt === null && c.tourniquetWindow === null;
   const couldHaveOne = (c: Casualty) => unknown(c) || tourniquetRange(c, now) !== null;
 
   // Factor order: every tourniquet question before any re-check
@@ -55,7 +55,7 @@ function pending(d: Doctrine, casualties: Casualty[], now: number): TieQuestion[
     if (unknown(p.casualty) && tiedWith.some(couldHaveOne)) {
       tourniquet.push({ casualty: p.casualty, kind: 'tourniquet', tiedWith });
     }
-    if ((p.casualty.recheck ?? null) === null) {
+    if (p.casualty.recheck === null) {
       recheck.push({ casualty: p.casualty, kind: 'recheck', tiedWith });
     }
   });

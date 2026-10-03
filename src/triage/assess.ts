@@ -17,7 +17,7 @@ export type Casualty = {
   // on as a window (a bucket, never a made-up exact time). null: not asked
   tourniquetWindow: TourniquetWindow | 'none' | null;
   recheck: Answer | null; // the shock question asked again at tie-break time
-  history: string[]; // answered keys in order ('kit:<key>' for kit), for undo
+  history: string[]; // answered keys in order ('kit:<key>', 'tie:<factor>'), for undo
 };
 
 // It went on between `from` (null: longer ago than any bucket) and `to`
@@ -67,13 +67,28 @@ export function answerKit(c: Casualty, kitKey: string, has: boolean): Casualty {
   return { ...c, kit: { ...c.kit, [kitKey]: has }, history: [...c.history, `kit:${kitKey}`] };
 }
 
-// Takes back the last answer (question or kit)
+// Tie-break answers ('tie:...' in the history, so undo takes them back too)
+export function answerTourniquet(c: Casualty, window: TourniquetWindow | 'none'): Casualty {
+  return { ...c, tourniquetWindow: window, history: [...c.history, 'tie:tourniquet'] };
+}
+
+export function answerRecheck(c: Casualty, value: Answer): Casualty {
+  return { ...c, recheck: value, history: [...c.history, 'tie:recheck'] };
+}
+
+// Takes back the last answer (question, kit or tie-break)
 export function undo(c: Casualty): Casualty {
   const last = c.history.at(-1);
   if (last === undefined) {
     return c;
   }
   const history = c.history.slice(0, -1);
+  if (last === 'tie:tourniquet') {
+    return { ...c, tourniquetWindow: null, history };
+  }
+  if (last === 'tie:recheck') {
+    return { ...c, recheck: null, history };
+  }
   if (last.startsWith('kit:')) {
     const { [last.slice(4)]: _, ...kit } = c.kit;
     return { ...c, kit, history };

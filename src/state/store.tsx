@@ -5,17 +5,33 @@
 import { File, Paths } from 'expo-file-system';
 import { createContext, useContext, useEffect, useReducer, type ReactNode } from 'react';
 
-import { answer, answerKit, newCasualty, undo, type Answer, type Casualty } from '../triage/assess.ts';
+import {
+  answer,
+  answerKit,
+  answerRecheck,
+  answerTourniquet,
+  newCasualty,
+  undo,
+  type Answer,
+  type Casualty,
+  type TourniquetWindow,
+} from '../triage/assess.ts';
 import type { Mode } from '../ui/theme.ts';
 
 export type State = {
   casualties: Casualty[];
   mode: Mode;
-  nextNumber: number; // C1, C2, ... never reused, so names stay unambiguous
+  nextNumber: number; // C1, C2, ... never reused (until reset), so names stay unambiguous
+  tieHistory: string[]; // casualty ids in tie-break answer order, for undo on the ties screen
 };
 
 type Action =
+  | { type: 'start'; count: number; now: number }
   | { type: 'add'; id: string; now: number }
+  | { type: 'reset' }
+  | { type: 'tieTourniquet'; id: string; window: TourniquetWindow | 'none' }
+  | { type: 'tieRecheck'; id: string; value: Answer }
+  | { type: 'tieUndo' }
   | { type: 'answer'; id: string; question: string; value: Answer }
   | { type: 'kit'; id: string; kit: string; has: boolean }
   | { type: 'undo'; id: string }
@@ -23,7 +39,7 @@ type Action =
   | { type: 'evacuated'; id: string }
   | { type: 'mode'; mode: Mode };
 
-const INITIAL: State = { casualties: [], mode: 'dark', nextNumber: 1 };
+const INITIAL: State = { casualties: [], mode: 'dark', nextNumber: 1, tieHistory: [] };
 
 function reduce(state: State, action: Action): State {
   const update = (id: string, f: (c: Casualty) => Casualty) => ({
@@ -32,6 +48,33 @@ function reduce(state: State, action: Action): State {
   });
 
   switch (action.type) {
+    case 'start': {
+      const fresh = Array.from({ length: action.count }, (_, i) =>
+        newCasualty(`c${action.now}-${i}`, `C${state.nextNumber + i}`, action.now + i),
+      );
+      return {
+        ...state,
+        nextNumber: state.nextNumber + action.count,
+        casualties: [...state.casualties, ...fresh],
+      };
+    }
+    case 'reset':
+      // everything but the display mode: night mode should survive a new incident
+      return { ...INITIAL, mode: state.mode };
+    case 'tieTourniquet':
+      return {
+        ...update(action.id, (c) => answerTourniquet(c, action.window)),
+        tieHistory: [...state.tieHistory, action.id],
+      };
+    case 'tieRecheck':
+      return {
+        ...update(action.id, (c) => answerRecheck(c, action.value)),
+        tieHistory: [...state.tieHistory, action.id],
+      };
+    case 'tieUndo': {
+      const id = state.tieHistory.at(-1);
+      return id === undefined ? state : { ...update(id, undo), tieHistory: state.tieHistory.slice(0, -1) };
+    }
     case 'add': {
       const n = state.nextNumber;
       return {
@@ -61,7 +104,19 @@ const SAVE_FILE = 'triage-state.json';
 function load(): State {
   try {
     const file = new File(Paths.document, SAVE_FILE);
-    return file.exists ? { ...INITIAL, ...(JSON.parse(file.textSync()) as State) } : INITIAL;
+    if (!file.exists) {
+      return INITIAL;
+    }
+    const saved = { ...INITIAL, ...(JSON.parse(file.textSync()) as State) };
+    // casualties saved by an older version lack the tie-break fields
+    return {
+      ...saved,
+      casualties: saved.casualties.map((c) => ({
+        ...c,
+        tourniquetWindow: c.tourniquetWindow ?? null,
+        recheck: c.recheck ?? null,
+      })),
+    };
   } catch {
     return INITIAL;
   }

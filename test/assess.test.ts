@@ -5,6 +5,8 @@ import { after, before, test } from 'node:test';
 import {
   answer,
   answerKit,
+  answerRecheck,
+  answerTourniquet,
   assess,
   newCasualty,
   nextPrompt,
@@ -162,4 +164,18 @@ test('early exit: Delayed keeps asking only what could make them Immediate', () 
   const { asked } = sieve(casualty({ torso_trauma: 'yes' }));
   assert.ok(asked.includes('breathing_distress'));
   assert.ok(!asked.includes('eye_injury')); // can only give Delayed, which they already are
+});
+
+test('tie-break answers are undone like any other answer', () => {
+  let c = newCasualty('c1', 'C1', 0);
+  c = answer(c, 'airway_obstruction', 'yes');
+  c = answerTourniquet(c, { from: null, to: 0 });
+  c = answerRecheck(c, 'yes');
+  assert.equal(c.recheck, 'yes');
+  c = undo(c);
+  assert.equal(c.recheck, null);
+  assert.deepEqual(c.tourniquetWindow, { from: null, to: 0 });
+  c = undo(c);
+  assert.equal(c.tourniquetWindow, null);
+  assert.equal(c.answers.airway_obstruction, 'yes');
 });
