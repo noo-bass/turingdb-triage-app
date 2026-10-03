@@ -1,0 +1,36 @@
+plugins {
+  id 'com.android.library'
+  id 'expo-module-gradle-plugin'
+}
+
+group = 'expo.modules.turingdb'
+version = '0.1.0'
+
+android {
+  namespace "expo.modules.turingdb"
+  // The engine is built with NDK r28 (mobile/build-android.sh in turingdb-mobile)
+  ndkVersion "28.2.13676358"
+
+  defaultConfig {
+    versionCode 1
+    versionName "0.1.0"
+    ndk {
+      abiFilters 'arm64-v8a'
+    }
+    externalNativeBuild {
+      cmake {
+        // Static C++ runtime: React Native's libc++_shared.so is from an older NDK
+        arguments "-DANDROID_STL=c++_static"
+        cppFlags "-fexperimental-library"
+      }
+    }
+  }
+  externalNativeBuild {
+    cmake {
+      path "CMakeLists.txt"
+    }
+  }
+  lintOptions {
+    abortOnError false
+  }
+}
