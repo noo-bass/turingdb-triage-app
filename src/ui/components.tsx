@@ -108,7 +108,13 @@ export function ScreenHeader({
         <Text
           numberOfLines={1}
           maxFontSizeMultiplier={size.maxTextScale}
-          style={[styles.title, { color: t.text, fontSize: big ? 34 : 30 }]}>
+          // beside a badge the name holds its width and the badge shrinks:
+          // a cut-off casualty name ("C1...") could be read as the wrong casualty
+          style={[
+            styles.title,
+            { color: t.text, fontSize: big ? 34 : 30 },
+            badge ? styles.titleFixed : null,
+          ]}>
           {title}
         </Text>
         {badge}
@@ -238,6 +244,7 @@ const styles = StyleSheet.create({
   },
   headerTitle: { flex: 1, flexDirection: 'row', alignItems: 'center', gap: 8, minWidth: 0 },
   title: { fontWeight: '800', flexShrink: 1 },
+  titleFixed: { flexShrink: 0 },
   iconButton: {
     width: 56,
     height: 56,
