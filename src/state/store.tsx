@@ -1,4 +1,4 @@
-// App state: the casualties and the display mode. Saved to a
+// App state: the casualties, the display mode and the settings. Saved to a
 // file after every change, so a killed app or a dead phone loses nothing.
 // Casualties live only here, never in the graph (decision 2).
 
@@ -24,6 +24,7 @@ export type State = {
   mode: Mode;
   nextNumber: number; // C1, C2, ... never reused (until reset), so names stay unambiguous
   tieHistory: string[]; // casualty ids in tie-break answer order, for undo on the ties screen
+  showGraph: boolean; // the TuringDB graph above the questions (Settings)
 };
 
 type Action =
@@ -39,9 +40,10 @@ type Action =
   | { type: 'undo'; id: string }
   | { type: 'tourniquet'; id: string; now: number }
   | { type: 'evacuated'; id: string }
-  | { type: 'mode'; mode: Mode };
+  | { type: 'mode'; mode: Mode }
+  | { type: 'showGraph'; show: boolean };
 
-const INITIAL: State = { casualties: [], mode: 'dark', nextNumber: 1, tieHistory: [] };
+const INITIAL: State = { casualties: [], mode: 'dark', nextNumber: 1, tieHistory: [], showGraph: false };
 
 function reduce(state: State, action: Action): State {
   const update = (id: string, f: (c: Casualty) => Casualty) => ({
@@ -61,8 +63,8 @@ function reduce(state: State, action: Action): State {
       };
     }
     case 'reset':
-      // everything but the display mode: night mode should survive a new incident
-      return { ...INITIAL, mode: state.mode };
+      // everything but the display settings: they should survive a new incident
+      return { ...INITIAL, mode: state.mode, showGraph: state.showGraph };
     case 'tieTourniquet':
       return {
         ...update(action.id, (c) => answerTourniquet(c, action.window)),
@@ -100,6 +102,8 @@ function reduce(state: State, action: Action): State {
       return { ...state, casualties: state.casualties.filter((c) => c.id !== action.id) };
     case 'mode':
       return { ...state, mode: action.mode };
+    case 'showGraph':
+      return { ...state, showGraph: action.show };
   }
 }
 

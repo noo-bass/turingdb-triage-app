@@ -1,7 +1,10 @@
 #include "TuringMobile.h"
 
 #include <stdlib.h>
+#include <filesystem>
+#include <fstream>
 #include <span>
+#include <string>
 #include <string_view>
 
 #include "CompilerContext.h"
@@ -15,6 +18,7 @@
 #include "SystemManager.h"
 #include "TuringConfig.h"
 #include "TuringDB.h"
+#include "dump/DumpConfig.h"
 #include "dump/LoadGraphResult.h"
 #include "versioning/ChangeID.h"
 #include "versioning/CommitHash.h"
@@ -72,6 +76,41 @@ void ensureHome(const std::string& dataDir) {
     if (!home || !*home) {
         setenv("HOME", dataDir.c_str(), 0);
     }
+}
+
+// Saved graphs carry the version of the engine that wrote them (DumpConfig::VERSION)
+// and no other engine reads them: the default graph then fails to load and
+// TuringDB stops at startup ("Graph 'default' already exists"). An app ships a
+// new engine with every update, and its saved graphs are rebuilt from what it
+// bundles, so graphs from another engine are set aside (not deleted) under
+// graphs.old-<version> and the engine starts with none.
+void retireGraphsFromOtherEngines(const std::string& dataDir) {
+    namespace stdfs = std::filesystem;
+
+    const stdfs::path root(dataDir);
+    const stdfs::path graphs = root / "graphs";
+    const stdfs::path stamp = root / "engine-version";
+    const std::string version = std::to_string(db::DumpConfig::VERSION);
+
+    std::string written = "unknown";
+    if (std::ifstream in(stamp); in) {
+        std::getline(in, written);
+    }
+
+    if (written == version) {
+        return;
+    }
+
+    if (stdfs::exists(graphs)) {
+        stdfs::path retired = root / ("graphs.old-" + written);
+        for (int i = 1; stdfs::exists(retired); i++) {
+            retired = root / ("graphs.old-" + written + "-" + std::to_string(i));
+        }
+        stdfs::rename(graphs, retired);
+    }
+
+    stdfs::create_directories(root);
+    std::ofstream(stamp) << version << "\n";
 }
 
 db::TuringConfig* configure(db::TuringConfig* config, const std::string& dataDir) {
@@ -157,6 +196,7 @@ private:
 TuringMobile::TuringMobile(const std::string& dataDir)
 {
     ensureHome(dataDir);
+    retireGraphsFromOtherEngines(dataDir);
     _engine = std::make_unique<Engine>(dataDir);
 }
 

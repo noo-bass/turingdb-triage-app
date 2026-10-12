@@ -65,7 +65,7 @@ export default function Home() {
             label={state.mode === 'red' ? 'Normal colours' : 'Red night mode'}
             onPress={() => dispatch({ type: 'mode', mode: state.mode === 'red' ? 'dark' : 'red' })}
           />
-          <IconButton icon="list" label="Engine check" onPress={() => router.push('/engine-check')} />
+          <IconButton icon="settings" label="Settings" onPress={() => router.push('/settings')} />
         </>
       }
     />

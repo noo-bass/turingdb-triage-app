@@ -1,49 +1,62 @@
 # Learn more https://docs.github.com/en/get-started/getting-started-with-git/ignoring-files
 
-# dependencies
-node_modules/
+# ======== Secrets and signing: never commit ========
+.env
+.env.*
+!.env.example
+*.pem
+*.key
+*.p8
+*.p12
+*.pfx
+*.cer
+*.der
+*.certSigningRequest
+*.mobileprovision
+*.provisionprofile
+*.jks
+*.keystore
+!debug.keystore
+id_rsa*
+id_ed25519*
+credentials.json
+secrets.json
+service-account*.json
+GoogleService-Info.plist
+google-services.json
+# Personal Claude Code settings (the shared .claude/settings.json is fine)
+.claude/settings.local.json
 
-# Expo
+# ======== Generated native projects (Continuous Native Generation) ========
+# They hold your signing team and bundle id: Expo regenerates them on build
+/ios
+/android
+
+# ======== The engine (engine/build-*.sh) ========
+# Upstream TuringDB, fetched at the pinned commit, and the builds (~GBs)
+/engine/turingdb
+/engine/build
+# The built engine is ~100 MB: copied in by scripts/sync-engine.sh, never committed
+*.xcframework
+compile_commands.json
+
+# ======== Dependencies and tooling ========
+node_modules/
 .expo/
 dist/
 web-build/
 expo-env.d.ts
-
-# Native
+.metro-health-check*
+*.tsbuildinfo
 .kotlin/
 *.orig.*
-*.jks
-*.p8
-*.p12
-*.key
-*.mobileprovision
+coverage/
 
-# Metro
-.metro-health-check*
-
-# debug
+# ======== Logs and editors ========
+*.log
 npm-debug.*
 yarn-debug.*
 yarn-error.*
-
-# macOS
 .DS_Store
-*.pem
-
-# local env files
-.env*.local
-
-# typescript
-*.tsbuildinfo
-
-# generated native folders
-/ios
-/android
-
-# Native projects are generated (Continuous Native Generation)
-/ios
-/android
-
-# The engine's upstream sources and builds (engine/build-*.sh)
-/engine/turingdb
-/engine/build
+.idea/
+.vscode/

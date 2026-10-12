@@ -1,4 +1,4 @@
-# Prebuilt engine, copied in by app/scripts/sync-engine.sh
+# Prebuilt engine, copied in by scripts/sync-engine.sh
 ios/Frameworks/
 android/engine/
 

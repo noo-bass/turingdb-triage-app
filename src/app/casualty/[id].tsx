@@ -24,6 +24,7 @@ import {
   sourceLine,
   useTheme,
 } from '../../ui/components.tsx';
+import { GraphPanel } from '../../ui/GraphView.tsx';
 import { Icon } from '../../ui/Icon.tsx';
 import { size } from '../../ui/theme.ts';
 import { useNow } from '../../ui/useNow.ts';
@@ -35,7 +36,7 @@ export default function CasualtyQuestions() {
   const { state, dispatch } = useStore();
   const { casualties } = state;
   const insets = useSafeAreaInsets();
-  const { height } = useWindowDimensions();
+  const { height, width } = useWindowDimensions();
   const now = useNow();
   const t = useTheme();
   // which prompt the "why" panel is open for: a new question starts closed
@@ -50,7 +51,8 @@ export default function CasualtyQuestions() {
   if (!prompt) {
     return <Redirect href={`/summary/${casualty.id}`} />;
   }
-  const { category } = assess(doctrine, casualty);
+  const assessment = assess(doctrine, casualty);
+  const { category } = assessment;
   const where = progress(doctrine, casualty, prompt);
   const who = `Casualty ${casualties.indexOf(casualty) + 1} of ${casualties.length}`;
 
@@ -92,6 +94,19 @@ export default function CasualtyQuestions() {
           <ProgressStrip progress={where} kit={prompt.kind === 'kit'} who={who} />
         </View>
       </View>
+
+      {state.showGraph && (
+        <View style={styles.graph}>
+          <GraphPanel
+            doctrine={doctrine}
+            casualty={casualty}
+            prompt={prompt}
+            assessment={assessment}
+            width={width - 2 * size.gutter}
+            onOpen={() => router.push(`/graph/${casualty.id}`)}
+          />
+        </View>
+      )}
 
       {/* Scrolls rather than clips when a long question, cue and the why
           panel together outgrow the space above the answers */}
@@ -296,6 +311,7 @@ function WhyPanel({ why }: { why: Why }) {
 
 const styles = StyleSheet.create({
   flex: { flex: 1 },
+  graph: { paddingHorizontal: size.gutter, paddingTop: 8 },
   idRow: {
     flexDirection: 'row',
     alignItems: 'center',

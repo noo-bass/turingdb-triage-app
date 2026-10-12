@@ -18,7 +18,9 @@ export type IconName =
   | 'sun'
   | 'alert'
   | 'list'
-  | 'medic';
+  | 'medic'
+  | 'settings'
+  | 'graph';
 
 const PATHS: Record<IconName, (c: string) => React.ReactNode> = {
   plus: () => <Path d="M12 4v16M4 12h16" />,
@@ -61,6 +63,21 @@ const PATHS: Record<IconName, (c: string) => React.ReactNode> = {
   ),
   alert: () => <Path d="M12 3L2 20h20L12 3zM12 10v4.5M12 17.5v.1" />,
   list: () => <Path d="M8 6h13M8 12h13M8 18h13M3.5 6v.1M3.5 12v.1M3.5 18v.1" />,
+  settings: () => (
+    <>
+      <Path d="M3 7h9M18 7h3M3 17h3M12 17h9" />
+      <Circle cx={15} cy={7} r={3} />
+      <Circle cx={9} cy={17} r={3} />
+    </>
+  ),
+  graph: () => (
+    <>
+      <Path d="M8 7.5l8-2M7.5 9l4 7M17.5 7l-4 9" />
+      <Circle cx={5.5} cy={8} r={2.5} />
+      <Circle cx={18.5} cy={5} r={2.5} />
+      <Circle cx={12.5} cy={18.5} r={2.5} />
+    </>
+  ),
   medic: () => (
     <>
       <Rect x={3} y={3} width={18} height={18} rx={3} />

@@ -45,7 +45,7 @@ npx expo run:ios --device --configuration Release
 ```
 
 Release builds embed the JavaScript, so the app runs with no laptop and no network.
-iOS signing: pick your team in Xcode, or add `ios.appleTeamId` to app.json. Android: the native module is written (JNI) but the engine is not built for Android yet.
+iOS signing: `APPLE_TEAM_ID=<team> BUNDLE_ID=<your.bundle.id> npx expo run:ios --device` (app.config.js). Android: the native module is written (JNI) but the engine is not built for Android yet.
 
 ## Checks
 
