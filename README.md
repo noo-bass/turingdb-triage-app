@@ -12,7 +12,7 @@ engine running inside the app: no network.
 ## How it fits together
 
 ```
-assets/graph/triage_v3.jsonl     the doctrine graph (exported from ../out/triage/graph.json)
+assets/graph/triage_v3.jsonl     the doctrine graph (TuringDB JSONL)
         | LOAD JSONL on first launch (~25 ms), saved under Documents/turing
 modules/turing-db                Expo native module: TuringDB in-process (iOS: ObjC++ over an
         |                        xcframework; Android: JNI over a static library)
@@ -31,20 +31,21 @@ The engine is TuringDB built for phones from source: the port in `engine/` (see 
 ## Build and run
 
 ```bash
-# 1. Build the engine (once, or after engine changes), in turingdb-mobile
-./mobile/build-ios.sh        # -> build-mobile/dist-ios/TuringMobile.xcframework
-./mobile/build-android.sh    # -> build-mobile/dist-android
+npm ci
 
-# 2. Copy the engine into the module and re-export the graph
+# 1. Build the engine (once, or after engine changes): fetches TuringDB, ~10 min the first time
+engine/build-ios.sh          # -> engine/build/dist-ios/TuringMobile.xcframework
+engine/build-macos.sh        # -> engine/build/engine-macos (for npm test)
+
+# 2. Copy the engine into the native module
 scripts/sync-engine.sh
 
 # 3. Install on a connected phone (device only: the engine has no simulator build)
 npx expo run:ios --device --configuration Release
-npx expo run:android --device --variant release
 ```
 
 Release builds embed the JavaScript, so the app runs with no laptop and no network.
-iOS signing: pick your team in Xcode, or add `ios.appleTeamId` to app.json. Android release builds use the debug keystore.
+iOS signing: pick your team in Xcode, or add `ios.appleTeamId` to app.json. Android: the native module is written (JNI) but the engine is not built for Android yet.
 
 ## Checks
 
@@ -55,7 +56,7 @@ npx expo lint
 ```
 
 Tests drive `turing_mobile_smoke` from the macOS build of the engine
-(`turingdb-mobile/build-mobile/engine-macos`; override with `TURING_SMOKE`).
+(`engine/build/engine-macos`; override with `TURING_SMOKE`).
 
 ## Rules that are ours, not doctrine (for medic review)
 

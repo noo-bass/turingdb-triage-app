@@ -4,8 +4,8 @@ project(turingdb_jni CXX)
 set(CMAKE_CXX_STANDARD 23)
 set(CMAKE_CXX_STANDARD_REQUIRED ON)
 
-# Built by turingdb-mobile/mobile/build-android.sh, copied in by
-# app/scripts/sync-engine.sh (not committed: ~100 MB)
+# Built by engine/build-android.sh (not written yet), copied in by
+# scripts/sync-engine.sh (not committed: ~100 MB)
 set(ENGINE_DIR ${CMAKE_CURRENT_SOURCE_DIR}/engine)
 
 add_library(turing_mobile STATIC IMPORTED)

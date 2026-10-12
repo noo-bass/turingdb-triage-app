@@ -19,8 +19,8 @@ Pod::Spec.new do |s|
   # header would break the Swift import
   s.public_header_files = 'src/TuringBridge.h'
 
-  # Built by turingdb-mobile/mobile/build-ios.sh, copied in by
-  # app/scripts/sync-engine.sh (not committed: 77 MB)
+  # Built by engine/build-ios.sh, copied in by
+  # scripts/sync-engine.sh (not committed: 77 MB)
   s.vendored_frameworks = 'Frameworks/TuringMobile.xcframework'
 
   s.pod_target_xcconfig = {

@@ -1,0 +1,152 @@
+diff --git a/storage/dump/PropertyContainerLoader.h b/storage/dump/PropertyContainerLoader.h
+index ecbb0063f..299133862 100644
+--- a/storage/dump/PropertyContainerLoader.h
++++ b/storage/dump/PropertyContainerLoader.h
+@@ -44,12 +44,12 @@ public:
+             return res.get_unexpected();
+         }
+ 
+-        [[maybe_unused]] const ValueType valueType = it.get<ValueType>();
+-        const uint64_t propCount = it.get<uint64_t>();
+-        const uint64_t idPageCount = it.get<uint64_t>();
+-        const uint64_t valuePageCount = it.get<uint64_t>();
+-        const uint64_t nullCount = it.get<uint64_t>();
+-        const uint64_t nullPageCount = it.get<uint64_t>();
++        [[maybe_unused]] const ValueType valueType = it.template get<ValueType>();
++        const uint64_t propCount = it.template get<uint64_t>();
++        const uint64_t idPageCount = it.template get<uint64_t>();
++        const uint64_t valuePageCount = it.template get<uint64_t>();
++        const uint64_t nullCount = it.template get<uint64_t>();
++        const uint64_t nullPageCount = it.template get<uint64_t>();
+ 
+         auto* container = new TypedPropertyContainer<T>;
+         container->_ids.resize(propCount);
+@@ -72,10 +72,10 @@ public:
+                 return DumpError::result(DumpErrorType::COULD_NOT_READ_PROPS);
+             }
+ 
+-            const size_t countInPage = it.get<uint64_t>();
++            const size_t countInPage = it.template get<uint64_t>();
+ 
+             for (size_t j = 0; j < countInPage; j++) {
+-                container->_ids[j + offset] = it.get<EntityID::Type>();
++                container->_ids[j + offset] = it.template get<EntityID::Type>();
+             }
+ 
+             offset += countInPage;
+@@ -98,10 +98,10 @@ public:
+                 return DumpError::result(DumpErrorType::COULD_NOT_READ_PROPS);
+             }
+ 
+-            const size_t countInPage = it.get<uint64_t>();
++            const size_t countInPage = it.template get<uint64_t>();
+ 
+             for (size_t j = 0; j < countInPage; j++) {
+-                container->_values[j + offset] = it.get<typename T::Primitive>();
++                container->_values[j + offset] = it.template get<typename T::Primitive>();
+             }
+ 
+             offset += countInPage;
+@@ -125,10 +125,10 @@ public:
+                 return DumpError::result(DumpErrorType::COULD_NOT_READ_PROPS);
+             }
+ 
+-            const size_t countInPage = it.get<uint64_t>();
++            const size_t countInPage = it.template get<uint64_t>();
+ 
+             for (size_t j = 0; j < countInPage; j++) {
+-                container->_nullIds[j + offset] = it.get<EntityID::Type>();
++                container->_nullIds[j + offset] = it.template get<EntityID::Type>();
+             }
+ 
+             offset += countInPage;
+@@ -188,13 +188,13 @@ public:
+             return res.get_unexpected();
+         }
+ 
+-        [[maybe_unused]] const ValueType valueType = it.get<ValueType>();
+-        const uint64_t propCount = it.get<uint64_t>();
+-        const uint64_t idPageCount = it.get<uint64_t>();
+-        const uint64_t bucketPageCount = it.get<uint64_t>();
+-        const uint64_t limitsPageCount = it.get<uint64_t>();
+-        const uint64_t nullCount = it.get<uint64_t>();
+-        const uint64_t nullPageCount = it.get<uint64_t>();
++        [[maybe_unused]] const ValueType valueType = it.template get<ValueType>();
++        const uint64_t propCount = it.template get<uint64_t>();
++        const uint64_t idPageCount = it.template get<uint64_t>();
++        const uint64_t bucketPageCount = it.template get<uint64_t>();
++        const uint64_t limitsPageCount = it.template get<uint64_t>();
++        const uint64_t nullCount = it.template get<uint64_t>();
++        const uint64_t nullPageCount = it.template get<uint64_t>();
+ 
+         auto* container = new TypedPropertyContainer<types::String>;
+         container->_ids.resize(propCount);
+@@ -221,10 +221,10 @@ public:
+                 return DumpError::result(DumpErrorType::COULD_NOT_READ_PROPS);
+             }
+ 
+-            const size_t countInPage = it.get<uint64_t>();
++            const size_t countInPage = it.template get<uint64_t>();
+ 
+             for (size_t j = 0; j < countInPage; j++) {
+-                container->_ids[j + offset] = it.get<EntityID::Type>();
++                container->_ids[j + offset] = it.template get<EntityID::Type>();
+             }
+ 
+             offset += countInPage;
+@@ -245,14 +245,14 @@ public:
+                 return DumpError::result(DumpErrorType::COULD_NOT_READ_PROPS);
+             }
+ 
+-            const size_t countInPage = it.get<uint64_t>();
++            const size_t countInPage = it.template get<uint64_t>();
+ 
+             if (countInPage * Constants::BUCKET_STRIDE > Constants::BUCKET_PAGE_AVAIL) {
+                 return DumpError::result(DumpErrorType::COULD_NOT_READ_PROPS);
+             }
+ 
+             for (size_t j = 0; j < countInPage; j++) {
+-                const std::span chars = it.get<char>(StringBucket::BUCKET_SIZE);
++                const std::span chars = it.template get<char>(StringBucket::BUCKET_SIZE);
+                 auto& bucket = rawBuckets.emplace_back();
+                 bucket.resize(StringBucket::BUCKET_SIZE);
+                 std::memcpy(bucket.data(), chars.data(), chars.size());
+@@ -277,11 +277,11 @@ public:
+                 return DumpError::result(DumpErrorType::COULD_NOT_READ_PROPS);
+             }
+ 
+-            const size_t blockCountInPage = it.get<uint64_t>();
++            const size_t blockCountInPage = it.template get<uint64_t>();
+ 
+             for (size_t j = 0; j < blockCountInPage; j++) {
+-                const uint64_t bucketIndex = it.get<uint64_t>();
+-                const uint32_t blockStrCount = it.get<uint32_t>();
++                const uint64_t bucketIndex = it.template get<uint64_t>();
++                const uint32_t blockStrCount = it.template get<uint32_t>();
+ 
+                 if (bucketIndex >= rawLimits.size()) {
+                     return DumpError::result(DumpErrorType::COULD_NOT_READ_PROPS);
+@@ -294,8 +294,8 @@ public:
+ 
+                 for (size_t k = 0; k < blockStrCount; k++) {
+                     auto& lim = limits[k + prevSize];
+-                    lim._offset = it.get<uint32_t>();
+-                    lim._count = it.get<uint32_t>();
++                    lim._offset = it.template get<uint32_t>();
++                    lim._count = it.template get<uint32_t>();
+                 }
+             }
+         }
+@@ -318,10 +318,10 @@ public:
+                 return DumpError::result(DumpErrorType::COULD_NOT_READ_PROPS);
+             }
+ 
+-            const size_t countInPage = it.get<uint64_t>();
++            const size_t countInPage = it.template get<uint64_t>();
+ 
+             for (size_t j = 0; j < countInPage; j++) {
+-                container->_nullIds[j + offset] = it.get<EntityID::Type>();
++                container->_nullIds[j + offset] = it.template get<EntityID::Type>();
+             }
+ 
+             offset += countInPage;

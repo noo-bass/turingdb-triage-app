@@ -43,3 +43,7 @@ yarn-error.*
 # Native projects are generated (Continuous Native Generation)
 /ios
 /android
+
+# The engine's upstream sources and builds (engine/build-*.sh)
+/engine/turingdb
+/engine/build

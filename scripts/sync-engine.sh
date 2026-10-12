@@ -1,27 +1,35 @@
 #!/bin/bash
-# Copies the prebuilt TuringDB engine and the triage graph into the app.
+# Copies the prebuilt TuringDB engine into the native module.
 #
 #   scripts/sync-engine.sh
 #
-# Engine: built in turingdb-mobile by mobile/build-ios.sh and mobile/build-android.sh
-#         (TURINGDB_MOBILE overrides its location).
-# Graph:  exported from ../out/triage/graph.json by ../scripts/export_jsonl.py.
+# Engine: built by engine/build-ios.sh (and, once it exists, engine/build-android.sh)
+#         into engine/build (TURINGDB_MOBILE_BUILD overrides it). An engine not
+#         built is skipped.
 set -euo pipefail
 
 APP="$(cd "$(dirname "${BASH_SOURCE[0]}")/.." && pwd)"
-PROJECT="$(cd "$APP/.." && pwd)"
-ENGINE="${TURINGDB_MOBILE:-$(cd "$PROJECT/../.." && pwd)/turingdb-mobile}/build-mobile"
+ENGINE="${TURINGDB_MOBILE_BUILD:-$APP/engine/build}"
 MODULE="$APP/modules/turing-db"
 
-echo "iOS engine     <- $ENGINE/dist-ios/TuringMobile.xcframework"
-rm -rf "$MODULE/ios/Frameworks"
-mkdir -p "$MODULE/ios/Frameworks"
-cp -R "$ENGINE/dist-ios/TuringMobile.xcframework" "$MODULE/ios/Frameworks/"
+if [[ ! -d "$ENGINE/dist-ios" && ! -d "$ENGINE/dist-android" ]]; then
+    echo "No engine built in $ENGINE (run engine/build-ios.sh)" >&2
+    exit 1
+fi
 
-echo "Android engine <- $ENGINE/dist-android"
-rm -rf "$MODULE/android/engine"
-cp -R "$ENGINE/dist-android" "$MODULE/android/engine"
+if [[ -d "$ENGINE/dist-ios" ]]; then
+    echo "iOS engine     <- $ENGINE/dist-ios/TuringMobile.xcframework"
+    rm -rf "$MODULE/ios/Frameworks"
+    mkdir -p "$MODULE/ios/Frameworks"
+    cp -R "$ENGINE/dist-ios/TuringMobile.xcframework" "$MODULE/ios/Frameworks/"
+else
+    echo "iOS engine     -- not built, skipped"
+fi
 
-echo "Graph          <- $PROJECT/out/triage/graph.json"
-(cd "$PROJECT" && uv run --project "$PROJECT/.." python scripts/export_jsonl.py \
-    --input out/triage/graph.json --output "$APP/assets/graph/triage_v3.jsonl")
+if [[ -d "$ENGINE/dist-android" ]]; then
+    echo "Android engine <- $ENGINE/dist-android"
+    rm -rf "$MODULE/android/engine"
+    cp -R "$ENGINE/dist-android" "$MODULE/android/engine"
+else
+    echo "Android engine -- not built, skipped"
+fi

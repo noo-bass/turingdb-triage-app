@@ -5,7 +5,7 @@
 // one JSON envelope per line out) on a fresh data directory holding the graph
 // the app bundles, so tests query exactly what the phone queries.
 //
-// TURING_SMOKE overrides the binary (default: the turingdb-mobile macOS build).
+// TURING_SMOKE overrides the binary (default: engine/build-macos.sh's build).
 
 import { spawn, spawnSync, type ChildProcessWithoutNullStreams } from 'node:child_process';
 import { copyFileSync, existsSync, mkdirSync, mkdtempSync, rmSync } from 'node:fs';
@@ -20,7 +20,7 @@ const APP = resolve(dirname(fileURLToPath(import.meta.url)), '../..');
 const GRAPH = 'triage_v3';
 const SMOKE =
   process.env.TURING_SMOKE ??
-  resolve(APP, '../../../turingdb-mobile/build-mobile/engine-macos/mobile/turing_mobile_smoke');
+  resolve(APP, 'engine/build/engine-macos/mobile/turing_mobile_smoke');
 
 export type Engine = {
   query: (cypher: string) => Promise<Row[]>;
